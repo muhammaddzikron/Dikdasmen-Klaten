@@ -15,14 +15,16 @@ import {
   BookOpen,
   GraduationCap,
   Clock,
+  UploadCloud,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Guru, EmploymentStatus } from '../../types';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
+import { ExcelImportModal } from '../common/ExcelImportModal';
 
 export const GuruModule: React.FC = () => {
-  const { filteredGuruList, filteredSekolahList, sekolahList, addGuru, updateGuru, deleteGuru } = useData();
+  const { filteredGuruList, filteredSekolahList, sekolahList, activeSekolahList, addGuru, updateGuru, deleteGuru } = useData();
   const { currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -30,6 +32,7 @@ export const GuruModule: React.FC = () => {
   const [filterStatus, setFilterStatus] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Guru | null>(null);
@@ -80,9 +83,10 @@ export const GuruModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
+    const defaultSchoolId = currentUser?.sekolahId || activeSekolahList[0]?.id || '';
     setFormData({
       name: '',
-      schoolId: currentUser?.sekolahId || sekolahList[0]?.id || '',
+      schoolId: defaultSchoolId,
       birthPlace: 'Klaten',
       birthDate: '1990-01-01',
       phone: '',
@@ -109,7 +113,10 @@ export const GuruModule: React.FC = () => {
 
   const handleOpenEdit = (g: Guru) => {
     setSelectedItem(g);
-    setFormData({ ...g });
+    setFormData({
+      ...g,
+      schoolId: g.schoolId || activeSekolahList[0]?.id || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -255,8 +262,16 @@ export const GuruModule: React.FC = () => {
             <span>PDF</span>
           </button>
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-300/80 dark:border-emerald-700/60 shadow-xs cursor-pointer transition-all"
+            title="Import data Guru massal via file spreadsheet Excel (.xlsx / .xls)"
+          >
+            <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Upload Excel</span>
+          </button>
+          <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Data Guru</span>
@@ -463,13 +478,15 @@ export const GuruModule: React.FC = () => {
                 <div>
                   <label className="font-semibold block mb-1">Satuan Pendidikan Bertugas *</label>
                   <select
+                    required
                     value={formData.schoolId || ''}
                     onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-semibold"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-semibold focus:ring-2 focus:ring-emerald-500"
                   >
-                    {sekolahList.map((s) => (
+                    <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
+                    {activeSekolahList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name} ({s.level})
                       </option>
                     ))}
                   </select>
@@ -860,6 +877,15 @@ export const GuruModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Upload Excel */}
+      <ExcelImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entityType="guru"
+        activeSchools={activeSekolahList}
+        defaultSchoolId={filterSchool !== 'ALL' ? filterSchool : currentUser?.sekolahId || activeSekolahList[0]?.id}
+      />
     </div>
   );
 };

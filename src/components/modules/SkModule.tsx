@@ -23,7 +23,7 @@ import { printOfficialSK } from '../../lib/storageService';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
 
 export const SkModule: React.FC = () => {
-  const { filteredSkList, sekolahList, guruList, tendikList, kepalaSekolahList, addSk, updateSk, deleteSk } =
+  const { filteredSkList, sekolahList, activeSekolahList, guruList, tendikList, kepalaSekolahList, addSk, updateSk, deleteSk } =
     useData();
   const { currentUser } = useAuth();
 
@@ -78,10 +78,11 @@ export const SkModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
+    const defaultSchoolId = currentUser?.sekolahId || activeSekolahList[0]?.id || '';
     setFormData({
       skNumber: `DIKDASMEN/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
       title: 'Pengangkatan Guru Tetap Yayasan',
-      schoolId: currentUser?.sekolahId || sekolahList[0]?.id || '',
+      schoolId: defaultSchoolId,
       type: 'SK Guru',
       submissionType: 'Baru',
       status: currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin' ? 'Terbit' : 'Belum Terbit',
@@ -415,13 +416,15 @@ export const SkModule: React.FC = () => {
                 <div>
                   <label className="font-semibold block mb-1">Satuan Pendidikan Pemohon *</label>
                   <select
+                    required
                     value={formData.schoolId || ''}
                     onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                   >
-                    {sekolahList.map((s) => (
+                    <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
+                    {activeSekolahList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name} ({s.level})
                       </option>
                     ))}
                   </select>

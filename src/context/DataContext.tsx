@@ -18,6 +18,7 @@ import {
 } from '../types';
 import {
   addRecord,
+  batchAddRecords,
   updateRecord,
   softDeleteRecord,
   restoreRecord,
@@ -61,6 +62,9 @@ interface DataContextType {
   filteredSiswaList: Siswa[];
   filteredSkList: SkDocument[];
 
+  // All active (non-deleted) schools sorted by Cabang + Alphabetical
+  activeSekolahList: Sekolah[];
+
   // Global School & Branch Filter
   selectedCabangId: string;
   setSelectedCabangId: (id: string) => void;
@@ -88,11 +92,13 @@ interface DataContextType {
   updateGuru: (id: string, data: Partial<Guru>) => Promise<void>;
   deleteGuru: (id: string, isPermanent?: boolean) => Promise<void>;
   restoreGuru: (id: string) => Promise<void>;
+  importGuruBatch: (items: Omit<Guru, 'id'>[]) => Promise<number>;
 
   addTendik: (data: Omit<Tendik, 'id'>) => Promise<string>;
   updateTendik: (id: string, data: Partial<Tendik>) => Promise<void>;
   deleteTendik: (id: string, isPermanent?: boolean) => Promise<void>;
   restoreTendik: (id: string) => Promise<void>;
+  importTendikBatch: (items: Omit<Tendik, 'id'>[]) => Promise<number>;
 
   addKepalaSekolah: (data: Omit<KepalaSekolah, 'id'>) => Promise<string>;
   updateKepalaSekolah: (id: string, data: Partial<KepalaSekolah>) => Promise<void>;
@@ -103,6 +109,7 @@ interface DataContextType {
   updateSiswa: (id: string, data: Partial<Siswa>) => Promise<void>;
   deleteSiswa: (id: string, isPermanent?: boolean) => Promise<void>;
   restoreSiswa: (id: string) => Promise<void>;
+  importSiswaBatch: (items: Omit<Siswa, 'id'>[]) => Promise<number>;
 
   submitSk: (data: Omit<SkDocument, 'id'>) => Promise<string>;
   addSk: (data: any) => Promise<string>;
@@ -302,8 +309,33 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }
 
-    return list;
+    const cabangMap = new Map(cabangList.map((c) => [c.id, c.name]));
+
+    return list.sort((a, b) => {
+      const cabangA = cabangMap.get(a.cabangId) || a.cabangId || '';
+      const cabangB = cabangMap.get(b.cabangId) || b.cabangId || '';
+      const compareCabang = cabangA.localeCompare(cabangB, 'id', { sensitivity: 'base' });
+      if (compareCabang !== 0) {
+        return compareCabang;
+      }
+      return a.name.localeCompare(b.name, 'id', { sensitivity: 'base' });
+    });
   }, [currentUser, sekolahList, cabangList, selectedCabangId, selectedSekolahId]);
+
+  // All active (non-deleted) schools sorted by Cabang + Alphabetical A-Z
+  const activeSekolahList = useMemo(() => {
+    const list = sekolahList.filter((s) => !s.isDeleted);
+    const cabangMap = new Map(cabangList.map((c) => [c.id, c.name]));
+    return list.sort((a, b) => {
+      const cabangA = cabangMap.get(a.cabangId) || a.cabangId || '';
+      const cabangB = cabangMap.get(b.cabangId) || b.cabangId || '';
+      const compareCabang = cabangA.localeCompare(cabangB, 'id', { sensitivity: 'base' });
+      if (compareCabang !== 0) {
+        return compareCabang;
+      }
+      return a.name.localeCompare(b.name, 'id', { sensitivity: 'base' });
+    });
+  }, [sekolahList, cabangList]);
 
   const accessibleSchoolIds = useMemo(() => {
     return new Set(filteredSekolahList.map((s) => s.id));
@@ -437,6 +469,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Data Guru berhasil dipulihkan!', 'success');
   };
 
+  const importGuruBatch = async (items: Omit<Guru, 'id'>[]): Promise<number> => {
+    if (!items || items.length === 0) return 0;
+    const ids = await batchAddRecords('guru', items);
+    await logActivity(
+      currentUser?.email || 'System',
+      'IMPORT_EXCEL_GURU',
+      `Import massal ${ids.length} data Guru via Excel`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Berhasil mengimpor ${ids.length} data Guru dari Excel!`, 'success');
+    return ids.length;
+  };
+
   // Operations: Tendik
   const addTendik = async (data: Omit<Tendik, 'id'>) => {
     const id = await addRecord('tendik', { ...data, isDeleted: false });
@@ -463,6 +509,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const restoreTendik = async (id: string) => {
     await restoreRecord('tendik', id);
     showToast('Data Tendik berhasil dipulihkan!', 'success');
+  };
+
+  const importTendikBatch = async (items: Omit<Tendik, 'id'>[]): Promise<number> => {
+    if (!items || items.length === 0) return 0;
+    const ids = await batchAddRecords('tendik', items);
+    await logActivity(
+      currentUser?.email || 'System',
+      'IMPORT_EXCEL_TENDIK',
+      `Import massal ${ids.length} data Tenaga Kependidikan via Excel`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Berhasil mengimpor ${ids.length} data Tendik dari Excel!`, 'success');
+    return ids.length;
   };
 
   // Operations: Kepala Sekolah
@@ -518,6 +578,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const restoreSiswa = async (id: string) => {
     await restoreRecord('siswa', id);
     showToast('Data Siswa berhasil dipulihkan!', 'success');
+  };
+
+  const importSiswaBatch = async (items: Omit<Siswa, 'id'>[]): Promise<number> => {
+    if (!items || items.length === 0) return 0;
+    const ids = await batchAddRecords('siswa', items);
+    await logActivity(
+      currentUser?.email || 'System',
+      'IMPORT_EXCEL_SISWA',
+      `Import massal ${ids.length} data Peserta Didik (Siswa) via Excel`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Berhasil mengimpor ${ids.length} data Siswa dari Excel!`, 'success');
+    return ids.length;
   };
 
   // Operations: SK (Surat Keputusan)
@@ -667,6 +741,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         notifikasiList,
         logList,
         settingsList,
+        activeSekolahList,
         filteredSekolahList,
         filteredGuruList,
         filteredTendikList,
@@ -690,10 +765,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateGuru,
         deleteGuru,
         restoreGuru,
+        importGuruBatch,
         addTendik,
         updateTendik,
         deleteTendik,
         restoreTendik,
+        importTendikBatch,
         addKepalaSekolah,
         updateKepalaSekolah,
         deleteKepalaSekolah,
@@ -702,6 +779,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateSiswa,
         deleteSiswa,
         restoreSiswa,
+        importSiswaBatch,
         submitSk,
         addSk,
         updateSk,

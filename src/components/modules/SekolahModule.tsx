@@ -149,7 +149,7 @@ export const SekolahModule: React.FC = () => {
   };
 
   const filteredSchools = useMemo(() => {
-    return activeSchools.filter((s) => {
+    const list = activeSchools.filter((s) => {
       const matchSearch =
         s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         s.npsn.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -163,7 +163,20 @@ export const SekolahModule: React.FC = () => {
 
       return matchSearch && matchCabang && matchLevel && matchAcc && matchCat;
     });
-  }, [activeSchools, searchQuery, filterCabang, filterLevel, filterAccreditation, filterCategory]);
+
+    const cabangMap = new Map(cabangList.map((c) => [c.id, c.name]));
+
+    // Urutkan: 1. Cabang yang sama, 2. Huruf abjad nama sekolah
+    return list.sort((a, b) => {
+      const cabangA = cabangMap.get(a.cabangId) || a.cabangId || '';
+      const cabangB = cabangMap.get(b.cabangId) || b.cabangId || '';
+      const compareCabang = cabangA.localeCompare(cabangB, 'id', { sensitivity: 'base' });
+      if (compareCabang !== 0) {
+        return compareCabang;
+      }
+      return a.name.localeCompare(b.name, 'id', { sensitivity: 'base' });
+    });
+  }, [activeSchools, searchQuery, filterCabang, filterLevel, filterAccreditation, filterCategory, cabangList]);
 
   const handleOpenAddModal = () => {
     setSelectedItem(null);

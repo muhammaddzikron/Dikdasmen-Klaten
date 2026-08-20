@@ -18,14 +18,16 @@ import {
   MapPin,
   Heart,
   CheckCircle2,
+  UploadCloud,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Tendik, TendikStatus, Gender } from '../../types';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
+import { ExcelImportModal } from '../common/ExcelImportModal';
 
 export const TendikModule: React.FC = () => {
-  const { filteredTendikList, filteredSekolahList, sekolahList, addTendik, updateTendik, deleteTendik } = useData();
+  const { filteredTendikList, filteredSekolahList, sekolahList, activeSekolahList, addTendik, updateTendik, deleteTendik } = useData();
   const { currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -34,6 +36,7 @@ export const TendikModule: React.FC = () => {
   const [filterPosition, setFilterPosition] = useState('ALL');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Tendik | null>(null);
 
@@ -84,10 +87,11 @@ export const TendikModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
+    const defaultSchoolId = currentUser?.sekolahId || activeSekolahList[0]?.id || '';
     setFormData({
       name: '',
       nipm: '',
-      schoolId: currentUser?.sekolahId || sekolahList[0]?.id || '',
+      schoolId: defaultSchoolId,
       gender: 'L',
       birthPlace: 'Klaten',
       birthDate: '',
@@ -116,7 +120,10 @@ export const TendikModule: React.FC = () => {
 
   const handleOpenEdit = (t: Tendik) => {
     setSelectedItem(t);
-    setFormData({ ...t });
+    setFormData({
+      ...t,
+      schoolId: t.schoolId || activeSekolahList[0]?.id || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -261,8 +268,16 @@ export const TendikModule: React.FC = () => {
             <span>PDF</span>
           </button>
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-300/80 dark:border-emerald-700/60 shadow-xs cursor-pointer transition-all"
+            title="Import data Tenaga Kependidikan massal via file spreadsheet Excel (.xlsx / .xls)"
+          >
+            <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Upload Excel</span>
+          </button>
+          <button
             onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Tambah Tendik</span>
@@ -440,13 +455,15 @@ export const TendikModule: React.FC = () => {
                   <div>
                     <label className="font-semibold block mb-1">Satuan Pendidikan Bertugas *</label>
                     <select
+                      required
                       value={formData.schoolId || ''}
                       onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                     >
-                      {sekolahList.map((s) => (
+                      <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
+                      {activeSekolahList.map((s) => (
                         <option key={s.id} value={s.id}>
-                          {s.name}
+                          {s.name} ({s.level})
                         </option>
                       ))}
                     </select>
@@ -823,7 +840,7 @@ export const TendikModule: React.FC = () => {
             <div className="flex justify-end pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 onClick={() => setIsDetailOpen(false)}
-                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs"
+                className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs cursor-pointer"
               >
                 Tutup
               </button>
@@ -831,6 +848,15 @@ export const TendikModule: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Modal Upload Excel */}
+      <ExcelImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        entityType="tendik"
+        activeSchools={activeSekolahList}
+        defaultSchoolId={filterSchool !== 'ALL' ? filterSchool : currentUser?.sekolahId || activeSekolahList[0]?.id}
+      />
     </div>
   );
 };

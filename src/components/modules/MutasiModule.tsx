@@ -17,7 +17,7 @@ import { Mutasi, TargetPersonelType } from '../../types';
 import { exportToCSV, exportToExcel } from '../../lib/exportUtils';
 
 export const MutasiModule: React.FC = () => {
-  const { filteredMutasiList, sekolahList, guruList, tendikList, siswaList, addMutasi, updateMutasi } = useData();
+  const { filteredMutasiList, sekolahList, activeSekolahList, guruList, tendikList, siswaList, addMutasi, updateMutasi } = useData();
   const { currentUser } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -54,8 +54,8 @@ export const MutasiModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
-    const originSchool = sekolahList[0]?.id || '';
-    const destSchool = sekolahList[1]?.id || sekolahList[0]?.id || '';
+    const originSchool = activeSekolahList[0]?.id || '';
+    const destSchool = activeSekolahList[1]?.id || activeSekolahList[0]?.id || '';
     const initialGuru = guruList[0];
 
     setFormData({
@@ -271,8 +271,8 @@ export const MutasiModule: React.FC = () => {
                 </tr>
               ) : (
                 filtered.map((m) => {
-                  const fromSch = sekolahList.find((s) => s.id === m.fromSchoolId);
-                  const toSch = sekolahList.find((s) => s.id === m.toSchoolId);
+                  const fromSch = activeSekolahList.find((s) => s.id === m.fromSchoolId);
+                  const toSch = activeSekolahList.find((s) => s.id === m.toSchoolId);
 
                   return (
                     <tr key={m.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors">
@@ -386,15 +386,17 @@ export const MutasiModule: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="font-semibold block mb-1">Sekolah Asal</label>
+                  <label className="font-semibold block mb-1">Sekolah Asal *</label>
                   <select
+                    required
                     value={formData.fromSchoolId || ''}
                     onChange={(e) => setFormData({ ...formData, fromSchoolId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                   >
-                    {sekolahList.map((s) => (
+                    <option value="" disabled>-- Pilih Sekolah Asal --</option>
+                    {activeSekolahList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name} ({s.level})
                       </option>
                     ))}
                   </select>
@@ -402,13 +404,15 @@ export const MutasiModule: React.FC = () => {
                 <div>
                   <label className="font-semibold block mb-1">Sekolah Tujuan *</label>
                   <select
+                    required
                     value={formData.toSchoolId || ''}
                     onChange={(e) => setFormData({ ...formData, toSchoolId: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-bold"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-bold focus:ring-2 focus:ring-emerald-500"
                   >
-                    {sekolahList.map((s) => (
+                    <option value="" disabled>-- Pilih Sekolah Tujuan --</option>
+                    {activeSekolahList.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name} ({s.level})
                       </option>
                     ))}
                   </select>

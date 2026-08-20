@@ -13,6 +13,7 @@ import {
   onSnapshot,
   Timestamp,
   serverTimestamp,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from './firebase';
 import { handleFirestoreError, OperationType } from './errorHandler';
@@ -101,6 +102,33 @@ export async function hardDeleteRecord(collectionName: string, id: string): Prom
     await deleteDoc(docRef);
   } catch (error) {
     handleFirestoreError(error, OperationType.DELETE, `${collectionName}/${id}`);
+  }
+}
+
+export async function batchAddRecords<T extends object>(collectionName: string, items: T[]): Promise<string[]> {
+  if (!items || items.length === 0) return [];
+  const ids: string[] = [];
+  const chunkSize = 400; // Firebase batch write limit is 500
+  try {
+    for (let i = 0; i < items.length; i += chunkSize) {
+      const chunk = items.slice(i, i + chunkSize);
+      const batch = writeBatch(db);
+      for (const item of chunk) {
+        const colRef = collection(db, collectionName);
+        const newDocRef = doc(colRef);
+        ids.push(newDocRef.id);
+        batch.set(newDocRef, {
+          ...item,
+          createdAt: (item as any).createdAt || new Date().toISOString(),
+          isDeleted: (item as any).isDeleted ?? false,
+        });
+      }
+      await batch.commit();
+    }
+    return ids;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.WRITE, collectionName);
+    return ids;
   }
 }
 

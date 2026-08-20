@@ -26,6 +26,8 @@ export const KepalaSekolahModule: React.FC = () => {
     filteredKepalaSekolahList,
     filteredSekolahList,
     sekolahList,
+    activeSekolahList,
+    cabangList,
     addKepalaSekolah,
     updateKepalaSekolah,
     deleteKepalaSekolah,
@@ -78,10 +80,11 @@ export const KepalaSekolahModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
+    const defaultSchoolId = currentUser?.sekolahId || activeSekolahList[0]?.id || '';
     setFormData({
       name: '',
       nipm: '',
-      schoolId: currentUser?.sekolahId || sekolahList[0]?.id || '',
+      schoolId: defaultSchoolId,
       birthPlace: 'Klaten',
       birthDate: '1975-05-12',
       phone: '',
@@ -102,7 +105,10 @@ export const KepalaSekolahModule: React.FC = () => {
 
   const handleOpenEdit = (k: KepalaSekolah) => {
     setSelectedItem(k);
-    setFormData({ ...k });
+    setFormData({
+      ...k,
+      schoolId: k.schoolId || activeSekolahList[0]?.id || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -377,13 +383,15 @@ export const KepalaSekolahModule: React.FC = () => {
               <div>
                 <label className="font-semibold block mb-1">Satuan Pendidikan / Madrasah *</label>
                 <select
+                  required
                   value={formData.schoolId || ''}
                   onChange={(e) => setFormData({ ...formData, schoolId: e.target.value })}
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
                 >
-                  {sekolahList.map((s) => (
+                  <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
+                  {activeSekolahList.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.name}
+                      {s.name} ({s.level})
                     </option>
                   ))}
                 </select>

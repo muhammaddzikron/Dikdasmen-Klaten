@@ -27,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   const {
     cabangList,
     sekolahList,
+    activeSekolahList,
     selectedCabangId,
     setSelectedCabangId,
     selectedSekolahId,
@@ -151,8 +152,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
               className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 outline-hidden cursor-pointer max-w-[160px] truncate"
             >
               <option value="ALL" className="dark:bg-slate-900">Semua Sekolah</option>
-              {sekolahList
-                .filter((s) => !s.isDeleted && (selectedCabangId === 'ALL' || s.cabangId === selectedCabangId))
+              {activeSekolahList
+                .filter((s) => selectedCabangId === 'ALL' || s.cabangId === selectedCabangId)
                 .map((s) => (
                   <option key={s.id} value={s.id} className="dark:bg-slate-900">
                     {s.name} ({s.level})
