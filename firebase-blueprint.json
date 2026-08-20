@@ -1,0 +1,309 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with role-based access",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "name": { "type": "string", "maxLength": 150 },
+        "role": { "type": "string", "enum": ["Super Admin", "Admin", "Cabang", "Sekolah"] },
+        "cabangId": { "type": "string" },
+        "sekolahId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "isActive": { "type": "boolean" }
+      },
+      "required": ["email", "name", "role"]
+    },
+    "Cabang": {
+      "title": "Cabang",
+      "description": "Pimpinan Cabang Muhammadiyah (PCM) / Kecamatan",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "code": { "type": "string", "maxLength": 30 },
+        "username": { "type": "string", "maxLength": 50 },
+        "address": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "ketuaName": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["name", "code"]
+    },
+    "Sekolah": {
+      "title": "Sekolah",
+      "description": "Satuan Pendidikan / Sekolah",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 200 },
+        "npsn": { "type": "string", "maxLength": 20 },
+        "cabangId": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["Negeri", "Swasta"] },
+        "level": { "type": "string", "enum": ["SD", "SMP", "SMA", "SMK", "MI", "MTs", "MA"] },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "website": { "type": "string" },
+        "accreditation": { "type": "string", "enum": ["A", "B", "C", "Unggul", "Baik Sekali", "Belum Terakreditasi"] },
+        "categoryCapability": { "type": "string", "enum": ["UGD", "RAWAT INAP", "RAWAT JALAN", "SEHAT"] },
+        "skPendirianNumber": { "type": "string" },
+        "skIzinOperasional": { "type": "string" },
+        "jumlahKeseluruhanSiswa": { "type": "number" },
+        "logoUrl": { "type": "string" },
+        "bannerUrl": { "type": "string" },
+        "vision": { "type": "string" },
+        "mission": { "type": "string" },
+        "description": { "type": "string" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "npsn", "level"]
+    },
+    "Guru": {
+      "title": "Guru",
+      "description": "Pendidik / Tenaga Pengajar",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "nip": { "type": "string" },
+        "nipm": { "type": "string" },
+        "nuptk": { "type": "string" },
+        "nbm": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Laki-laki", "Perempuan"] },
+        "subject": { "type": "string" },
+        "status": { "type": "string", "enum": ["GTY", "GTT", "PNS", "PPPK"] },
+        "education": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "schoolId", "status"]
+    },
+    "Tendik": {
+      "title": "Tendik",
+      "description": "Tenaga Kependidikan",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "nip": { "type": "string" },
+        "nipm": { "type": "string" },
+        "nbm": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Laki-laki", "Perempuan"] },
+        "position": { "type": "string" },
+        "status": { "type": "string", "enum": ["KTY", "KTT", "PNS"] },
+        "education": { "type": "string" },
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "schoolId", "position"]
+    },
+    "KepalaSekolah": {
+      "title": "KepalaSekolah",
+      "description": "Pimpinan / Kepala Satuan Pendidikan",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "nip": { "type": "string" },
+        "nipm": { "type": "string" },
+        "nbm": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "periodNumber": { "type": "number" },
+        "status": { "type": "string", "enum": ["Aktif", "Selesai", "Mutasi"] },
+        "phone": { "type": "string" },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "schoolId", "status"]
+    },
+    "Siswa": {
+      "title": "Siswa",
+      "description": "Peserta Didik",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 150 },
+        "nisn": { "type": "string", "maxLength": 20 },
+        "schoolId": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Laki-laki", "Perempuan"] },
+        "class": { "type": "string" },
+        "address": { "type": "string" },
+        "status": { "type": "string", "enum": ["Aktif", "Lulus", "Mutasi"] },
+        "isDeleted": { "type": "boolean" }
+      },
+      "required": ["name", "schoolId", "nisn"]
+    },
+    "SkGuru": {
+      "title": "SkGuru",
+      "description": "Surat Keputusan Pendidik",
+      "type": "object",
+      "properties": {
+        "skNumber": { "type": "string" },
+        "skDate": { "type": "string" },
+        "skEndDate": { "type": "string" },
+        "title": { "type": "string" },
+        "guruId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Terbit", "Belum Terbit", "Ditolak"] },
+        "submissionType": { "type": "string", "enum": ["Baru", "Perpanjangan"] },
+        "nbmUrl": { "type": "string" },
+        "ijazahUrl": { "type": "string" },
+        "skLamaUrl": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "guruId", "schoolId", "status"]
+    },
+    "SkTendik": {
+      "title": "SkTendik",
+      "description": "Surat Keputusan Tenaga Kependidikan",
+      "type": "object",
+      "properties": {
+        "skNumber": { "type": "string" },
+        "skDate": { "type": "string" },
+        "skEndDate": { "type": "string" },
+        "title": { "type": "string" },
+        "tendikId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Terbit", "Belum Terbit", "Ditolak"] },
+        "submissionType": { "type": "string", "enum": ["Baru", "Perpanjangan"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "tendikId", "schoolId", "status"]
+    },
+    "SkKepalaSekolah": {
+      "title": "SkKepalaSekolah",
+      "description": "Surat Keputusan Kepala Sekolah",
+      "type": "object",
+      "properties": {
+        "skNumber": { "type": "string" },
+        "skDate": { "type": "string" },
+        "skEndDate": { "type": "string" },
+        "title": { "type": "string" },
+        "kepalaSekolahId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "fileUrl": { "type": "string" },
+        "status": { "type": "string", "enum": ["Terbit", "Belum Terbit", "Ditolak"] },
+        "submissionType": { "type": "string", "enum": ["Baru", "Perpanjangan"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "kepalaSekolahId", "schoolId", "status"]
+    },
+    "Notifikasi": {
+      "title": "Notifikasi",
+      "description": "Pemberitahuan Sistem",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "warning", "error", "success"] },
+        "isRead": { "type": "boolean" },
+        "targetRole": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "message"]
+    },
+    "LogAktivitas": {
+      "title": "LogAktivitas",
+      "description": "Audit Trail Log",
+      "type": "object",
+      "properties": {
+        "userEmail": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["action", "timestamp"]
+    },
+    "Mutasi": {
+      "title": "Mutasi",
+      "description": "Riwayat Perpindahan Personel atau Siswa",
+      "type": "object",
+      "properties": {
+        "type": { "type": "string", "enum": ["Guru", "Tendik", "KepalaSekolah", "Siswa"] },
+        "personId": { "type": "string" },
+        "personName": { "type": "string" },
+        "fromSchoolId": { "type": "string" },
+        "toSchoolId": { "type": "string" },
+        "reason": { "type": "string" },
+        "date": { "type": "string" },
+        "skNumber": { "type": "string" },
+        "status": { "type": "string" }
+      },
+      "required": ["type", "personId", "fromSchoolId", "toSchoolId"]
+    },
+    "Setting": {
+      "title": "Setting",
+      "description": "Konfigurasi Sistem",
+      "type": "object",
+      "properties": {
+        "key": { "type": "string" },
+        "value": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["key", "value"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Profil pengguna dan otorisasi role"
+    },
+    "/cabang/{cabangId}": {
+      "schema": "Cabang",
+      "description": "Data Cabang PCM"
+    },
+    "/sekolah/{sekolahId}": {
+      "schema": "Sekolah",
+      "description": "Data Satuan Pendidikan / Sekolah"
+    },
+    "/guru/{guruId}": {
+      "schema": "Guru",
+      "description": "Data Pendidik / Guru"
+    },
+    "/tendik/{tendikId}": {
+      "schema": "Tendik",
+      "description": "Data Tenaga Kependidikan"
+    },
+    "/kepalaSekolah/{kepalaSekolahId}": {
+      "schema": "KepalaSekolah",
+      "description": "Data Kepala Sekolah"
+    },
+    "/siswa/{siswaId}": {
+      "schema": "Siswa",
+      "description": "Data Peserta Didik"
+    },
+    "/skGuru/{skId}": {
+      "schema": "SkGuru",
+      "description": "Dokumen SK Guru"
+    },
+    "/skTendik/{skId}": {
+      "schema": "SkTendik",
+      "description": "Dokumen SK Tendik"
+    },
+    "/skKepalaSekolah/{skId}": {
+      "schema": "SkKepalaSekolah",
+      "description": "Dokumen SK Kepala Sekolah"
+    },
+    "/notifikasi/{notifId}": {
+      "schema": "Notifikasi",
+      "description": "Notifikasi aplikasi"
+    },
+    "/logAktivitas/{logId}": {
+      "schema": "LogAktivitas",
+      "description": "Audit Trail Aktivitas"
+    },
+    "/mutasi/{mutasiId}": {
+      "schema": "Mutasi",
+      "description": "Log Mutasi Personel"
+    },
+    "/settings/{settingId}": {
+      "schema": "Setting",
+      "description": "Pengaturan Sistem"
+    }
+  }
+}

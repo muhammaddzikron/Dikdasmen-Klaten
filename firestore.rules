@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Default deny for unspecified paths
+    match /{document=**} {
+      allow read, write: if true;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if true;
+    }
+
+    // Cabang collection
+    match /cabang/{cabangId} {
+      allow read, write: if true;
+    }
+
+    // Sekolah collection
+    match /sekolah/{sekolahId} {
+      allow read, write: if true;
+    }
+
+    // Guru collection
+    match /guru/{guruId} {
+      allow read, write: if true;
+    }
+
+    // Tendik collection
+    match /tendik/{tendikId} {
+      allow read, write: if true;
+    }
+
+    // Kepala Sekolah collection
+    match /kepalaSekolah/{kepalaSekolahId} {
+      allow read, write: if true;
+    }
+
+    // Siswa collection
+    match /siswa/{siswaId} {
+      allow read, write: if true;
+    }
+
+    // SK Collections
+    match /skGuru/{skId} {
+      allow read, write: if true;
+    }
+
+    match /skTendik/{skId} {
+      allow read, write: if true;
+    }
+
+    match /skKepalaSekolah/{skId} {
+      allow read, write: if true;
+    }
+
+    // Notifikasi
+    match /notifikasi/{notifId} {
+      allow read, write: if true;
+    }
+
+    // Log Aktivitas
+    match /logAktivitas/{logId} {
+      allow read, write: if true;
+    }
+
+    // Mutasi
+    match /mutasi/{mutasiId} {
+      allow read, write: if true;
+    }
+
+    // Settings
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+  }
+}
+

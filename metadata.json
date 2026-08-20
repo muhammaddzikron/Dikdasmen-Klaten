@@ -1,0 +1,6 @@
+{
+  "name": "SIM Dikdasmen Klaten",
+  "description": "Sistem Informasi Manajemen Pendidikan Dasar dan Menengah PDM Klaten - Pengelolaan Sekolah, Cabang/PCM, PTK, Kepala Sekolah, Siswa, Mutasi, Pengajuan SK, dan Analisis Mutu Sekolah berbasis Firebase Cloud Firestore",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
