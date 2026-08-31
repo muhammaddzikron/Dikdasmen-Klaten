@@ -240,21 +240,25 @@ export const SiswaModule: React.FC = () => {
             <FileText className="w-3.5 h-3.5" />
             <span>PDF</span>
           </button>
-          <button
-            onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-300/80 dark:border-emerald-700/60 shadow-xs cursor-pointer transition-all"
-            title="Import data Peserta Didik (Siswa) massal via file spreadsheet Excel (.xlsx / .xls)"
-          >
-            <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-            <span>Upload Excel</span>
-          </button>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-colors cursor-pointer"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Siswa</span>
-          </button>
+          {currentUser?.role !== 'Cabang' && (
+            <>
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-300/80 dark:border-emerald-700/60 shadow-xs cursor-pointer transition-all"
+                title="Import data Peserta Didik (Siswa) massal via file spreadsheet Excel (.xlsx / .xls)"
+              >
+                <UploadCloud className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                <span>Upload Excel</span>
+              </button>
+              <button
+                onClick={handleOpenAdd}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-colors cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Siswa</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -413,20 +417,26 @@ export const SiswaModule: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleOpenEdit(s)}
-                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
-                            title="Edit Data Siswa"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(s.id, s.name)}
-                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
-                            title="Hapus ke Recycle Bin"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {(currentUser?.role === 'Super Admin' ||
+                            currentUser?.role === 'Admin' ||
+                            (currentUser?.role === 'Sekolah' && currentUser.sekolahId === s.schoolId)) && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEdit(s)}
+                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors"
+                                title="Edit Data Siswa"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(s.id, s.name)}
+                                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                                title="Hapus ke Recycle Bin"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>

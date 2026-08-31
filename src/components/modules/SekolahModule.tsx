@@ -43,6 +43,7 @@ export const SekolahModule: React.FC = () => {
     updateSekolah,
     deleteSekolah,
     syncMasterSekolah,
+    selectedCabangId,
     isLoading,
   } = useData();
   const { currentUser } = useAuth();
@@ -180,10 +181,16 @@ export const SekolahModule: React.FC = () => {
 
   const handleOpenAddModal = () => {
     setSelectedItem(null);
+    const defaultCabangId =
+      (currentUser?.role === 'Cabang' && currentUser.cabangId) ||
+      (selectedCabangId && selectedCabangId !== 'ALL' ? selectedCabangId : '') ||
+      cabangList.find((c) => !c.isDeleted)?.id ||
+      '';
+
     setFormData({
       name: '',
       npsn: '',
-      cabangId: cabangList[0]?.id || '',
+      cabangId: defaultCabangId,
       rtRw: '01/02',
       kodePos: '57411',
       kelurahan: '',
@@ -392,24 +399,24 @@ export const SekolahModule: React.FC = () => {
             <span>Cetak PDF</span>
           </button>
           {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-            <>
-              <button
-                onClick={syncMasterSekolah}
-                disabled={isLoading}
-                title="Sinkronkan 9 Sekolah Master Klaten langsung di bawah Cabang Kota"
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-semibold transition-colors disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-                <span>Sinkron Master 9 Sekolah</span>
-              </button>
-              <button
-                onClick={handleOpenAddModal}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Tambah Profil Sekolah</span>
-              </button>
-            </>
+            <button
+              onClick={syncMasterSekolah}
+              disabled={isLoading}
+              title="Sinkronkan 9 Sekolah Master Klaten langsung di bawah Cabang Kota"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-semibold transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
+              <span>Sinkron Master 9 Sekolah</span>
+            </button>
+          )}
+          {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin' || currentUser?.role === 'Cabang') && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Profil Sekolah</span>
+            </button>
           )}
         </div>
       </div>
@@ -581,6 +588,7 @@ export const SekolahModule: React.FC = () => {
                           </button>
                           {(currentUser?.role === 'Super Admin' ||
                             currentUser?.role === 'Admin' ||
+                            (currentUser?.role === 'Cabang' && (!currentUser.cabangId || currentUser.cabangId === school.cabangId)) ||
                             (currentUser?.role === 'Sekolah' && currentUser.sekolahId === school.id)) && (
                             <button
                               onClick={() => handleOpenEditModal(school)}
@@ -660,11 +668,14 @@ export const SekolahModule: React.FC = () => {
                   </div>
 
                   <div>
-                    <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">Cabang / PCM Naungan</label>
+                    <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
+                      Cabang / PCM Naungan {currentUser?.role === 'Cabang' && <span className="text-xs text-emerald-600 font-normal">(Wilayah Binaan Anda)</span>}
+                    </label>
                     <select
                       value={formData.cabangId || ''}
                       onChange={(e) => setFormData({ ...formData, cabangId: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
+                      disabled={currentUser?.role === 'Cabang' && !!currentUser.cabangId}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 disabled:opacity-75 disabled:bg-slate-100 dark:disabled:bg-slate-800"
                     >
                       {cabangList
                         .filter((c) => !c.isDeleted)

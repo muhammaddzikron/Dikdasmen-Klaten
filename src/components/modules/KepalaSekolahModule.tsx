@@ -182,13 +182,15 @@ export const KepalaSekolahModule: React.FC = () => {
             <Download className="w-3.5 h-3.5" />
             <span>Ekspor CSV</span>
           </button>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Data Kepala</span>
-          </button>
+          {currentUser?.role !== 'Cabang' && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Data Kepala</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -328,20 +330,26 @@ export const KepalaSekolahModule: React.FC = () => {
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                          <button
-                            onClick={() => handleOpenEdit(k)}
-                            className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
-                            title="Edit Data"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDelete(k.id, k.name)}
-                            className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
-                            title="Hapus ke Recycle Bin"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          {(currentUser?.role === 'Super Admin' ||
+                            currentUser?.role === 'Admin' ||
+                            (currentUser?.role === 'Sekolah' && currentUser.sekolahId === k.schoolId)) && (
+                            <>
+                              <button
+                                onClick={() => handleOpenEdit(k)}
+                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                title="Edit Data"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDelete(k.id, k.name)}
+                                className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                title="Hapus ke Recycle Bin"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
                         </div>
                       </td>
                     </tr>
