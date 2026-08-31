@@ -38,7 +38,7 @@ export const MutasiModule: React.FC = () => {
     skNumber: `089/MUTASI/III.4/D/${new Date().getFullYear()}`,
   });
 
-  const activeMutasi = useMemo(() => filteredMutasiList.filter((m) => !m.isDeleted), [filteredMutasiList]);
+  const activeMutasi = useMemo(() => (filteredMutasiList || []).filter((m) => !m?.isDeleted), [filteredMutasiList]);
 
   const filtered = useMemo(() => {
     return activeMutasi.filter((m) => {

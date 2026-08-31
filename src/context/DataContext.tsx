@@ -61,6 +61,7 @@ interface DataContextType {
   filteredKepalaSekolahList: KepalaSekolah[];
   filteredSiswaList: Siswa[];
   filteredSkList: SkDocument[];
+  filteredMutasiList: MutasiRecord[];
 
   // All active (non-deleted) schools sorted by Cabang + Alphabetical
   activeSekolahList: Sekolah[];
@@ -338,29 +339,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [sekolahList, cabangList]);
 
   const accessibleSchoolIds = useMemo(() => {
-    return new Set(filteredSekolahList.map((s) => s.id));
+    return new Set((filteredSekolahList || []).map((s) => s.id));
   }, [filteredSekolahList]);
 
   // Filtered Persons & SKs
   const filteredGuruList = useMemo(() => {
-    return guruList.filter((g) => accessibleSchoolIds.has(g.schoolId));
+    return (guruList || []).filter((g) => accessibleSchoolIds.has(g.schoolId));
   }, [guruList, accessibleSchoolIds]);
 
   const filteredTendikList = useMemo(() => {
-    return tendikList.filter((t) => accessibleSchoolIds.has(t.schoolId));
+    return (tendikList || []).filter((t) => accessibleSchoolIds.has(t.schoolId));
   }, [tendikList, accessibleSchoolIds]);
 
   const filteredKepalaSekolahList = useMemo(() => {
-    return kepalaSekolahList.filter((ks) => accessibleSchoolIds.has(ks.schoolId));
+    return (kepalaSekolahList || []).filter((ks) => accessibleSchoolIds.has(ks.schoolId));
   }, [kepalaSekolahList, accessibleSchoolIds]);
 
   const filteredSiswaList = useMemo(() => {
-    return siswaList.filter((s) => accessibleSchoolIds.has(s.schoolId));
+    return (siswaList || []).filter((s) => accessibleSchoolIds.has(s.schoolId));
   }, [siswaList, accessibleSchoolIds]);
 
   const filteredSkList = useMemo(() => {
-    return allSkList.filter((sk) => accessibleSchoolIds.has(sk.schoolId));
+    return (allSkList || []).filter((sk) => accessibleSchoolIds.has(sk.schoolId));
   }, [allSkList, accessibleSchoolIds]);
+
+  const filteredMutasiList = useMemo(() => {
+    return (mutasiList || []).filter(
+      (m) =>
+        accessibleSchoolIds.has(m.fromSchoolId) ||
+        accessibleSchoolIds.has(m.toSchoolId) ||
+        !m.fromSchoolId
+    );
+  }, [mutasiList, accessibleSchoolIds]);
 
   // Active School for Single School Profile mode
   const activeSekolah = useMemo(() => {
@@ -748,6 +758,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         filteredKepalaSekolahList,
         filteredSiswaList,
         filteredSkList,
+        filteredMutasiList,
         selectedCabangId,
         setSelectedCabangId,
         selectedSekolahId,

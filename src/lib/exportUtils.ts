@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 /**
  * Export tabular data directly to CSV with UTF-8 BOM
@@ -70,7 +70,7 @@ export function exportToPDF(
   doc.setTextColor(15, 23, 42); // Slate-900
   doc.text(title.toUpperCase(), 14, 32);
 
-  (doc as any).autoTable({
+  autoTable(doc, {
     startY: 36,
     head: [headers],
     body: dataRows,

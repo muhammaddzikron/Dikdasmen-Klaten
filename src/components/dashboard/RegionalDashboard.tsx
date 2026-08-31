@@ -48,11 +48,11 @@ export const RegionalDashboard: React.FC<RegionalDashboardProps> = ({ setActiveT
 
   const [filterJenjang, setFilterJenjang] = useState('ALL');
 
-  const activeSchools = filteredSekolahList.filter((s) => !s.isDeleted);
-  const activeGurus = filteredGuruList.filter((g) => !g.isDeleted);
-  const activeTendiks = filteredTendikList.filter((t) => !t.isDeleted);
-  const activeSiswas = filteredSiswaList.filter((s) => !s.isDeleted);
-  const activeKs = filteredKepalaSekolahList.filter((k) => !k.isDeleted);
+  const activeSchools = (filteredSekolahList || []).filter((s) => !s?.isDeleted);
+  const activeGurus = (filteredGuruList || []).filter((g) => !g?.isDeleted);
+  const activeTendiks = (filteredTendikList || []).filter((t) => !t?.isDeleted);
+  const activeSiswas = (filteredSiswaList || []).filter((s) => !s?.isDeleted);
+  const activeKs = (filteredKepalaSekolahList || []).filter((k) => !k?.isDeleted);
 
   // Filtered by selected jenjang if any
   const displayedSchools = filterJenjang === 'ALL'
@@ -71,8 +71,8 @@ export const RegionalDashboard: React.FC<RegionalDashboardProps> = ({ setActiveT
   const sehatSchools = displayedSchools.filter((s) => s.categoryCapability === 'SEHAT' || !s.categoryCapability);
 
   // SK Status Count
-  const skTerbitCount = filteredSkList.filter((sk) => sk.status === 'Terbit' && !sk.isDeleted).length;
-  const skPendingCount = filteredSkList.filter((sk) => sk.status === 'Belum Terbit' && !sk.isDeleted).length;
+  const skTerbitCount = (filteredSkList || []).filter((sk) => sk.status === 'Terbit' && !sk.isDeleted).length;
+  const skPendingCount = (filteredSkList || []).filter((sk) => sk.status === 'Belum Terbit' && !sk.isDeleted).length;
   const totalSiswasCount = activeSiswas.filter((s) => s.status === 'Aktif').length;
 
   // Donut data for Mutu
