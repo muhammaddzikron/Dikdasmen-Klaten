@@ -27,7 +27,7 @@ export const LoginView: React.FC = () => {
     setError(null);
     setIsSubmitting(true);
     try {
-      await login(username, password);
+      await login(username, password, activeLoginType);
     } catch (err: any) {
       setError(err.message || 'Gagal login. Periksa username dan kata sandi Anda.');
     } finally {

@@ -9,7 +9,7 @@ interface AuthContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   loading: boolean;
-  login: (identifier: string, password?: string) => Promise<boolean>;
+  login: (identifier: string, password?: string, roleType?: 'sekolah' | 'cabang' | 'admin') => Promise<boolean>;
   quickLogin: (role: UserRole, customName?: string, cabangId?: string, sekolahId?: string) => void;
   logout: () => void;
   updateCurrentUserProfile: (data: Partial<UserProfile>) => void;
@@ -102,77 +102,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
-  const login = async (identifierInput: string, passwordInput?: string): Promise<boolean> => {
+  const login = async (
+    identifierInput: string,
+    passwordInput?: string,
+    roleType?: 'sekolah' | 'cabang' | 'admin'
+  ): Promise<boolean> => {
     setIsLoading(true);
     try {
       const identifier = identifierInput.trim().toLowerCase();
       const password = (passwordInput || '').trim();
 
       if (!identifier || !password) {
-        throw new Error('Silakan masukkan Username / Email dan Kata Sandi.');
+        throw new Error('Silakan masukkan Username / NPSN / Email dan Kata Sandi.');
       }
 
-      // 1. Super Admin Authentication (user: admin / password: adminn)
-      if (
-        identifier === 'admin' ||
-        identifier === 'admin@dikdasmenklaten.org' ||
-        identifier === 'admin@dikdasmen-jogja.org' ||
-        identifier === 'admin@dikdasmen.or.id' ||
-        identifier === 'muhammaddzikron@gmail.com'
-      ) {
-        if (password !== 'adminn' && password !== 'admin') {
-          throw new Error('Kata sandi salah. Gunakan password "adminn".');
-        }
-
-        const superAdminUser: UserProfile = {
-          id: 'usr-superadmin-01',
-          email: 'admin@dikdasmenklaten.org',
-          name: 'Administrator (Super Admin)',
-          role: 'Super Admin',
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          phone: '081234567890',
-        };
-
-        setCurrentUser(superAdminUser);
-        try {
-          await logActivity(
-            superAdminUser.email,
-            'LOGIN',
-            `Super Admin (${superAdminUser.name}) berhasil masuk ke sistem SIM Dikdasmen.`,
-            superAdminUser.name,
-            superAdminUser.role
-          );
-        } catch {}
-        setIsLoading(false);
-        return true;
-      }
-
-      // 2. Staf Admin Authentication
-      if (identifier === 'staf' || identifier === 'staf_admin' || identifier.includes('staf')) {
-        if (password !== 'adminn' && password !== 'admin') {
-          throw new Error('Kata sandi salah. Gunakan password "adminn".');
-        }
-
-        const adminUser: UserProfile = {
-          ...DEMO_USERS['Admin'],
-          name: 'Staf Sekretariat Majelis',
-        };
-
-        setCurrentUser(adminUser);
-        try {
-          await logActivity(adminUser.email, 'LOGIN', `Admin (${adminUser.name}) berhasil masuk.`, adminUser.name, adminUser.role);
-        } catch {}
-        setIsLoading(false);
-        return true;
-      }
-
-      // 3. Cabang PCM Authentication
-      // Fetch Cabang from Firestore combined with fallback for 100% reliable login
+      // Fetch Cabang from static master & live Firestore
       const fallbackCabangs = getStaticFallbackData().cabangList;
       const cabangMap = new Map<string, Cabang>();
-
       fallbackCabangs.forEach((c) => {
         if (c.code) cabangMap.set(c.code.toLowerCase().trim(), c);
         if (c.username) cabangMap.set(c.username.toLowerCase().trim(), c);
@@ -191,88 +137,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } catch (err) {
-        console.warn('Firestore fetch during cabang login notice:', err);
+        console.warn('Firestore fetch during cabang check notice:', err);
       }
-
       const allCabangs = Array.from(new Set(cabangMap.values()));
-      const matchedCabang = allCabangs.find((c) => {
-        if (c.isDeleted) return false;
-        const cCode = String(c.code || '').toLowerCase().trim();
-        const cUsername = String(c.username || '').toLowerCase().trim();
-        const cName = String(c.name || '').toLowerCase().trim();
-        const cId = String(c.id || '').toLowerCase().trim();
-        const cEmail = String(c.email || '').toLowerCase().trim();
 
-        // Exact matches
-        if (identifier === cCode || identifier === cUsername || identifier === cId || (cEmail && identifier === cEmail)) {
-          return true;
-        }
-
-        // Match username / name variations (e.g. 'pcm_klatenkota', 'pcm-klaten-kota', 'klaten kota')
-        const cleanId = identifier.replace(/[^a-z0-9]/g, '');
-        const cleanCode = cCode.replace(/[^a-z0-9]/g, '');
-        const cleanUsername = cUsername.replace(/[^a-z0-9]/g, '');
-        const cleanName = cName.replace(/[^a-z0-9]/g, '');
-
-        if (cleanId === cleanCode || (cleanUsername && cleanId === cleanUsername) || (cleanId.length >= 4 && cleanName.includes(cleanId))) {
-          return true;
-        }
-
-        // Generic fallback for keywords like 'cabang' or 'pcm'
-        if (identifier === 'cabang' || identifier === 'pcm') {
-          return true;
-        }
-
-        return false;
-      });
-
-      if (matchedCabang || identifier.includes('pcm') || identifier.includes('cabang')) {
-        const targetCabang = matchedCabang || allCabangs[0];
-        const expectedPassword = String(targetCabang.password || 'cabang123').trim();
-        const isPasswordCorrect =
-          password === expectedPassword ||
-          password === 'cabang123' ||
-          password === 'adminn' ||
-          password === 'admin' ||
-          password.toLowerCase() === expectedPassword.toLowerCase();
-
-        if (!isPasswordCorrect) {
-          throw new Error(
-            `Kata sandi untuk ${targetCabang.name} tidak sesuai. Gunakan kata sandi default "cabang123" atau kata sandi yang telah disimpan.`
-          );
-        }
-
-        const cabangUser: UserProfile = {
-          id: `usr-${targetCabang.id}`,
-          email: targetCabang.email || `pcm@${targetCabang.code.toLowerCase()}.dikdasmen.org`,
-          name: `Operator ${targetCabang.name}`,
-          role: 'Cabang',
-          cabangId: targetCabang.id,
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          avatarUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=150&auto=format&fit=crop&q=80',
-        };
-
-        setCurrentUser(cabangUser);
-        try {
-          await logActivity(cabangUser.email, 'LOGIN', `Cabang (${cabangUser.name}) berhasil masuk.`, cabangUser.name, cabangUser.role);
-        } catch {}
-        setIsLoading(false);
-        return true;
-      }
-
-      // 4. Operator Satuan Pendidikan (Sekolah) Authentication
-      // Fetch schools from Firestore combined with static fallback for 100% reliable login
+      // Fetch Sekolah from static master & live Firestore
       const fallbackSchools = getStaticFallbackData().sekolahList;
       const schoolMap = new Map<string, Sekolah>();
-
-      // Seed map with fallback master schools
       fallbackSchools.forEach((s) => {
         if (s.npsn) schoolMap.set(String(s.npsn).trim(), s);
         if (s.id) schoolMap.set(s.id, s);
       });
 
-      // Overlay with live Firestore schools if available
       try {
         const snap = await getDocs(collection(db, 'sekolah'));
         if (!snap.empty) {
@@ -284,47 +160,115 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } catch (err) {
-        console.warn('Firestore fetch during school login notice:', err);
+        console.warn('Firestore fetch during school check notice:', err);
       }
-
       const allSchools = Array.from(new Set(schoolMap.values()));
+
+      // Identity helper matchers
+      const isAdminAccount = (id: string) => {
+        return (
+          id === 'admin' ||
+          id === 'superadmin' ||
+          id === 'admin@dikdasmenklaten.org' ||
+          id === 'admin@dikdasmen-jogja.org' ||
+          id === 'admin@dikdasmen.or.id' ||
+          id === 'muhammaddzikron@gmail.com' ||
+          id === 'staf' ||
+          id === 'staf_admin' ||
+          id === 'admin_staf'
+        );
+      };
+
+      const isStafAdmin = (id: string) => {
+        return id === 'staf' || id === 'staf_admin' || id === 'admin_staf';
+      };
+
+      const findMatchedCabang = (id: string) => {
+        return allCabangs.find((c) => {
+          if (c.isDeleted) return false;
+          const cCode = String(c.code || '').toLowerCase().trim();
+          const cUsername = String(c.username || '').toLowerCase().trim();
+          const cName = String(c.name || '').toLowerCase().trim();
+          const cId = String(c.id || '').toLowerCase().trim();
+          const cEmail = String(c.email || '').toLowerCase().trim();
+
+          if (id === cCode || id === cUsername || id === cId || (cEmail && id === cEmail)) {
+            return true;
+          }
+
+          const cleanId = id.replace(/[^a-z0-9]/g, '');
+          const cleanCode = cCode.replace(/[^a-z0-9]/g, '');
+          const cleanUsername = cUsername.replace(/[^a-z0-9]/g, '');
+          const cleanName = cName.replace(/[^a-z0-9]/g, '');
+
+          if (
+            (cleanCode && cleanId === cleanCode) ||
+            (cleanUsername && cleanId === cleanUsername) ||
+            (cleanId.length >= 4 && cleanName.includes(cleanId))
+          ) {
+            return true;
+          }
+
+          if (id === 'cabang' || id === 'pcm' || id === 'cabangkota') {
+            return true;
+          }
+
+          return false;
+        });
+      };
+
       const rawDigits = identifier.replace(/\D/g, '');
+      const findMatchedSchool = (id: string) => {
+        return allSchools.find((s) => {
+          if (s.isDeleted) return false;
+          const sNpsn = String(s.npsn || '').toLowerCase().trim();
+          const sNpsnDigits = sNpsn.replace(/\D/g, '');
+          const sUsername = String(s.username || s.npsn || '').toLowerCase().trim();
+          const sEmail = String(s.email || '').toLowerCase().trim();
+          const sId = String(s.id || '').toLowerCase().trim();
+          const sName = String(s.name || '').toLowerCase().trim();
 
-      // Check if identifier matches any school by NPSN, custom username, email, ID, or school name
-      const matchedSchool = allSchools.find((s) => {
-        if (s.isDeleted) return false;
-        const sNpsn = String(s.npsn || '').toLowerCase().trim();
-        const sNpsnDigits = sNpsn.replace(/\D/g, '');
-        const sUsername = String(s.username || s.npsn || '').toLowerCase().trim();
-        const sEmail = String(s.email || '').toLowerCase().trim();
-        const sId = String(s.id || '').toLowerCase().trim();
-        const sName = String(s.name || '').toLowerCase().trim();
+          // Match NPSN / digits
+          if (id === sNpsn || (rawDigits.length >= 4 && rawDigits === sNpsnDigits)) {
+            return true;
+          }
+          // Match custom username
+          if (id === sUsername) {
+            return true;
+          }
+          // Match email or id
+          if ((sEmail && id === sEmail) || (sId && id === sId)) {
+            return true;
+          }
+          // Match name keyword
+          if (id.length >= 3 && (sName.includes(id) || id.includes(sNpsn))) {
+            return true;
+          }
+          return false;
+        });
+      };
 
-        // 1. Direct match with NPSN or numeric digits
-        if (identifier === sNpsn || (rawDigits.length >= 4 && rawDigits === sNpsnDigits)) {
-          return true;
-        }
-        // 2. Direct match with custom username
-        if (identifier === sUsername) {
-          return true;
-        }
-        // 3. Match with Email
-        if (sEmail && identifier === sEmail) {
-          return true;
-        }
-        // 4. Match with School ID
-        if (sId && identifier === sId) {
-          return true;
-        }
-        // 5. Match with school name keyword
-        if (identifier.length >= 3 && (sName.includes(identifier) || identifier.includes(sNpsn))) {
-          return true;
+      // STRICT VALIDATION ACCORDING TO SELECTED TAB:
+      // 1. TAB SEKOLAH
+      if (roleType === 'sekolah') {
+        if (isAdminAccount(identifier)) {
+          throw new Error('Akun ini adalah akun Administrator. Silakan pilih tab "Super Admin" untuk masuk.');
         }
 
-        return false;
-      });
+        const matchedCabang = findMatchedCabang(identifier);
+        if (matchedCabang || identifier.includes('cabang') || identifier.includes('pcm')) {
+          throw new Error(`Akun "${identifierInput}" terdaftar sebagai akun Cabang / PCM (${matchedCabang?.name || 'Cabang'}). Silakan pilih tab "Cabang / PCM" untuk masuk.`);
+        }
 
-      if (matchedSchool) {
+        let matchedSchool = findMatchedSchool(identifier);
+        if (!matchedSchool && (identifier === 'sekolah' || identifier === 'operator')) {
+          matchedSchool = allSchools.find((s) => !s.isDeleted) || allSchools[0];
+        }
+
+        if (!matchedSchool) {
+          throw new Error(`Akun Sekolah "${identifierInput}" tidak ditemukan. Pastikan Anda memasukkan NPSN atau Username Sekolah yang valid pada tab Sekolah.`);
+        }
+
         const expectedPassword = String(matchedSchool.password || 'sekolah123').trim();
         const isPasswordCorrect =
           password === expectedPassword ||
@@ -334,9 +278,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           password.toLowerCase() === expectedPassword.toLowerCase();
 
         if (!isPasswordCorrect) {
-          throw new Error(
-            `Kata sandi untuk ${matchedSchool.name} (NPSN: ${matchedSchool.npsn}) tidak sesuai. Gunakan kata sandi default "sekolah123" atau kata sandi yang telah disimpan.`
-          );
+          throw new Error(`Kata sandi untuk ${matchedSchool.name} (NPSN: ${matchedSchool.npsn}) tidak sesuai. Silakan periksa kembali kata sandi Anda.`);
         }
 
         const sekolahUser: UserProfile = {
@@ -366,61 +308,171 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
-      // Generic Operator Sekolah keyword (e.g. 'sekolah' or 'operator')
-      if (identifier === 'sekolah' || identifier === 'operator') {
-        const isPasswordCorrect = password === 'sekolah123' || password === 'adminn' || password === 'admin';
-        if (!isPasswordCorrect) {
-          throw new Error('Kata sandi salah. Gunakan password default "sekolah123" atau "adminn".');
+      // 2. TAB CABANG / PCM
+      if (roleType === 'cabang') {
+        if (isAdminAccount(identifier)) {
+          throw new Error('Akun ini adalah akun Administrator. Silakan pilih tab "Super Admin" untuk masuk.');
         }
 
-        const defaultSchool = allSchools.find((s) => !s.isDeleted) || allSchools[0];
-        const sekolahUser: UserProfile = {
-          id: defaultSchool ? `usr-sekolah-${defaultSchool.id}` : DEMO_USERS['Sekolah'].id,
-          email: defaultSchool?.email || DEMO_USERS['Sekolah'].email,
-          name: defaultSchool ? `Operator ${defaultSchool.name}` : DEMO_USERS['Sekolah'].name,
-          role: 'Sekolah',
-          sekolahId: defaultSchool?.id,
-          cabangId: defaultSchool?.cabangId,
+        const matchedSchool = findMatchedSchool(identifier);
+        if (matchedSchool && !identifier.includes('cabang') && !identifier.includes('pcm') && !identifier.includes('kota')) {
+          throw new Error(`Akun "${identifierInput}" terdaftar sebagai akun Sekolah (${matchedSchool.name}). Silakan pilih tab "Sekolah" untuk masuk.`);
+        }
+
+        let matchedCabang = findMatchedCabang(identifier);
+        if (!matchedCabang && (identifier === 'cabang' || identifier === 'pcm')) {
+          matchedCabang = allCabangs[0];
+        }
+
+        if (!matchedCabang) {
+          throw new Error(`Akun Cabang / PCM "${identifierInput}" tidak ditemukan. Pastikan Anda memasukkan Kode Cabang atau Username PCM yang valid pada tab Cabang / PCM.`);
+        }
+
+        const expectedPassword = String(matchedCabang.password || 'cabang123').trim();
+        const isPasswordCorrect =
+          password === expectedPassword ||
+          password === 'cabang123' ||
+          password === 'adminn' ||
+          password === 'admin' ||
+          password.toLowerCase() === expectedPassword.toLowerCase();
+
+        if (!isPasswordCorrect) {
+          throw new Error(`Kata sandi untuk ${matchedCabang.name} tidak sesuai. Silakan periksa kembali kata sandi Anda.`);
+        }
+
+        const cabangUser: UserProfile = {
+          id: `usr-${matchedCabang.id}`,
+          email: matchedCabang.email || `pcm@${matchedCabang.code.toLowerCase()}.dikdasmen.org`,
+          name: `Operator ${matchedCabang.name}`,
+          role: 'Cabang',
+          cabangId: matchedCabang.id,
           createdAt: new Date().toISOString(),
           isActive: true,
-          avatarUrl: getSchoolLogo(defaultSchool?.logoUrl),
-          phone: defaultSchool?.operatorPhone || defaultSchool?.phone || DEMO_USERS['Sekolah'].phone,
+          avatarUrl: DEFAULT_SCHOOL_LOGO,
+          phone: matchedCabang.phone || '0272-321002',
         };
 
-        setCurrentUser(sekolahUser);
+        setCurrentUser(cabangUser);
+        try {
+          await logActivity(cabangUser.email, 'LOGIN', `Cabang (${cabangUser.name}) berhasil masuk.`, cabangUser.name, cabangUser.role);
+        } catch {}
+        setIsLoading(false);
+        return true;
+      }
+
+      // 3. TAB SUPER ADMIN
+      if (roleType === 'admin') {
+        const matchedSchool = findMatchedSchool(identifier);
+        if (matchedSchool && !isAdminAccount(identifier)) {
+          throw new Error(`Akun "${identifierInput}" adalah akun Sekolah (${matchedSchool.name}). Silakan pilih tab "Sekolah" untuk masuk.`);
+        }
+
+        const matchedCabang = findMatchedCabang(identifier);
+        if (matchedCabang && !isAdminAccount(identifier)) {
+          throw new Error(`Akun "${identifierInput}" adalah akun Cabang / PCM (${matchedCabang.name}). Silakan pilih tab "Cabang / PCM" untuk masuk.`);
+        }
+
+        if (!isAdminAccount(identifier)) {
+          throw new Error('Akun Administrator tidak ditemukan. Tab Super Admin hanya untuk kredensial Administrator atau Staf Majelis.');
+        }
+
+        if (password !== 'adminn' && password !== 'admin') {
+          throw new Error('Kata sandi Administrator tidak sesuai. Silakan periksa kembali kata sandi Anda.');
+        }
+
+        if (isStafAdmin(identifier)) {
+          const adminUser: UserProfile = {
+            ...DEMO_USERS['Admin'],
+            name: 'Staf Sekretariat Majelis',
+          };
+          setCurrentUser(adminUser);
+          try {
+            await logActivity(adminUser.email, 'LOGIN', `Admin (${adminUser.name}) berhasil masuk.`, adminUser.name, adminUser.role);
+          } catch {}
+          setIsLoading(false);
+          return true;
+        }
+
+        const superAdminUser: UserProfile = {
+          id: 'usr-superadmin-01',
+          email: identifier.includes('@') ? identifier : 'admin@dikdasmenklaten.org',
+          name: 'Administrator (Super Admin)',
+          role: 'Super Admin',
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: DEFAULT_SCHOOL_LOGO,
+          phone: '081234567890',
+        };
+
+        setCurrentUser(superAdminUser);
         try {
           await logActivity(
-            sekolahUser.email,
+            superAdminUser.email,
             'LOGIN',
-            `Operator Sekolah (${sekolahUser.name}) berhasil masuk.`,
-            sekolahUser.name,
-            sekolahUser.role
+            `Super Admin (${superAdminUser.name}) berhasil masuk ke sistem SIM Dikdasmen.`,
+            superAdminUser.name,
+            superAdminUser.role
           );
         } catch {}
         setIsLoading(false);
         return true;
       }
 
-      // Generic authentication with correct password
-      if (password === 'adminn' || password === 'admin') {
-        const user: UserProfile = {
-          id: 'usr-' + Date.now(),
-          email: identifier.includes('@') ? identifier : `${identifier}@dikdasmen.or.id`,
-          name: identifier.toUpperCase(),
-          role: 'Super Admin',
-          createdAt: new Date().toISOString(),
-          isActive: true,
-          phone: '081234567890',
-        };
+      // 4. FALLBACK AUTO-DETECTION (if roleType not provided)
+      if (isAdminAccount(identifier)) {
+        if (password !== 'adminn' && password !== 'admin') {
+          throw new Error('Kata sandi Administrator salah.');
+        }
+        const user = isStafAdmin(identifier) ? DEMO_USERS['Admin'] : DEMO_USERS['Super Admin'];
         setCurrentUser(user);
-        try {
-          await logActivity(user.email, 'LOGIN', `Pengguna ${user.name} berhasil masuk.`, user.name, user.role);
-        } catch {}
         setIsLoading(false);
         return true;
       }
 
-      throw new Error('Username atau kata sandi tidak valid. Pastikan username dan kata sandi benar.');
+      const matchedCabang = findMatchedCabang(identifier);
+      if (matchedCabang) {
+        const expPass = String(matchedCabang.password || 'cabang123').trim();
+        if (password !== expPass && password !== 'cabang123' && password !== 'adminn' && password !== 'admin') {
+          throw new Error(`Kata sandi untuk ${matchedCabang.name} tidak sesuai.`);
+        }
+        const cUser: UserProfile = {
+          id: `usr-${matchedCabang.id}`,
+          email: matchedCabang.email || `pcm@${matchedCabang.code.toLowerCase()}.dikdasmen.org`,
+          name: `Operator ${matchedCabang.name}`,
+          role: 'Cabang',
+          cabangId: matchedCabang.id,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: DEFAULT_SCHOOL_LOGO,
+        };
+        setCurrentUser(cUser);
+        setIsLoading(false);
+        return true;
+      }
+
+      const matchedSchool = findMatchedSchool(identifier);
+      if (matchedSchool) {
+        const expPass = String(matchedSchool.password || 'sekolah123').trim();
+        if (password !== expPass && password !== 'sekolah123' && password !== 'adminn' && password !== 'admin') {
+          throw new Error(`Kata sandi untuk ${matchedSchool.name} tidak sesuai.`);
+        }
+        const sUser: UserProfile = {
+          id: `usr-sekolah-${matchedSchool.id}`,
+          email: matchedSchool.email || `${matchedSchool.npsn}@sekolah.dikdasmenklaten.org`,
+          name: `Operator ${matchedSchool.name}`,
+          role: 'Sekolah',
+          sekolahId: matchedSchool.id,
+          cabangId: matchedSchool.cabangId || 'cabang-klaten-kota',
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: getSchoolLogo(matchedSchool.logoUrl),
+        };
+        setCurrentUser(sUser);
+        setIsLoading(false);
+        return true;
+      }
+
+      throw new Error('Username atau kata sandi tidak valid. Pastikan memilih tab yang sesuai.');
     } catch (err: any) {
       setIsLoading(false);
       throw err;
