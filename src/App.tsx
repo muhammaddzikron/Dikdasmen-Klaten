@@ -48,8 +48,30 @@ const MainLayout: React.FC = () => {
         }
         return <RegionalDashboard setActiveTab={setActiveTab} />;
       case 'sekolah':
+        if (currentUser.role !== 'Super Admin') {
+          return (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Modul Master Data Sekolah hanya dapat diakses dan dikelola oleh Super Admin.
+              </p>
+            </div>
+          );
+        }
         return <SekolahModule />;
       case 'cabang':
+        if (currentUser.role !== 'Super Admin') {
+          return (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Modul Master Data Cabang (PCM) hanya dapat diakses dan dikelola oleh Super Admin.
+              </p>
+            </div>
+          );
+        }
         return <CabangModule />;
       case 'guru':
         return <GuruModule />;

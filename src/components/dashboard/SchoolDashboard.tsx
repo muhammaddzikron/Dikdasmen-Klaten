@@ -127,96 +127,107 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
 
   return (
     <div className="space-y-6">
-      {/* School Selector Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-        <div className="flex items-center gap-2">
-          <School className="w-5 h-5 text-emerald-600 shrink-0" />
-          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
-            {currentUser?.role === 'Sekolah' ? 'Satuan Pendidikan Aktif:' : 'Pilih Satuan Pendidikan:'}
-          </span>
+      {/* School Selector Bar - Shown for Super Admin to inspect different schools */}
+      {currentUser?.role === 'Super Admin' && (
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+          <div className="flex items-center gap-2">
+            <School className="w-5 h-5 text-emerald-600 shrink-0" />
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+              Pilih Satuan Pendidikan:
+            </span>
+          </div>
+          <select
+            id="school-profile-selector"
+            value={currentSchool.id}
+            onChange={(e) => setSelectedSekolahId(e.target.value)}
+            aria-label="Pilih Profil Sekolah"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 max-w-md w-full sm:w-auto"
+          >
+            {validSchools.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name} (NPSN: {s.npsn}) - {s.level}
+              </option>
+            ))}
+          </select>
         </div>
-        <select
-          id="school-profile-selector"
-          value={currentSchool.id}
-          onChange={(e) => setSelectedSekolahId(e.target.value)}
-          aria-label="Pilih Profil Sekolah"
-          className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 max-w-md w-full sm:w-auto"
-        >
-          {validSchools.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name} (NPSN: {s.npsn}) - {s.level}
-            </option>
-          ))}
-        </select>
-      </div>
+      )}
 
-      {/* Header Banner & School Identity */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        {/* Banner */}
-        <div className="h-44 sm:h-56 w-full relative bg-slate-800 overflow-hidden">
-          <img
-            src={
-              currentSchool.bannerUrl ||
-              'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80'
-            }
-            alt={currentSchool.name}
-            className="w-full h-full object-cover opacity-80"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent" />
-          <div className="absolute bottom-4 left-6 right-6 flex items-center justify-between text-white">
-            <div className="flex items-center gap-2 text-xs font-medium bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/20">
-              <Building className="w-4 h-4 text-emerald-400" />
+      {/* Header & School Identity */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+        {/* Top Accent & Status Strip */}
+        <div className="bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-slate-500/10 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-slate-900 px-5 sm:px-6 py-3 border-b border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200 bg-white/90 dark:bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+              <Building className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>{schoolCabang?.name || 'Pimpinan Cabang Muhammadiyah'}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <span className={`px-2.5 py-1 rounded-lg text-xs font-black uppercase tracking-wider border ${getCategoryBadge(currentSchool.categoryCapability)}`}>
-                Kategori {currentSchool.categoryCapability}
-              </span>
-              <span className="bg-emerald-500 text-white font-bold text-xs px-2.5 py-1 rounded-lg">
-                Akreditasi {currentSchool.accreditation}
-              </span>
+            <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">•</span>
+            <div className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+              <span>Satuan Pendidikan Terdaftar Resmi</span>
             </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border shadow-2xs ${getCategoryBadge(currentSchool.categoryCapability)}`}>
+              Kategori {currentSchool.categoryCapability || 'Mandiri'}
+            </span>
+            <span className="bg-emerald-600 text-white font-bold text-xs px-2.5 py-1 rounded-lg shadow-2xs flex items-center gap-1">
+              <Award className="w-3.5 h-3.5" />
+              <span>Akreditasi {currentSchool.accreditation || 'A'}</span>
+            </span>
           </div>
         </div>
 
         {/* Profile Details Bar */}
-        <div className="p-6 sm:p-8">
-          <div className="flex flex-col md:flex-row gap-6 items-start justify-between">
-            <div className="flex items-start gap-4">
-              <img
-                src={
-                  currentSchool.logoUrl ||
-                  'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80'
-                }
-                alt={currentSchool.name}
-                className="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500 shadow-md flex-shrink-0 -mt-12 bg-white ring-4 ring-white dark:ring-slate-900"
-              />
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
+        <div className="p-5 sm:p-6 lg:p-7">
+          <div className="flex flex-col lg:flex-row gap-6 items-start justify-between">
+            <div className="flex items-start gap-4 sm:gap-5 w-full lg:w-auto">
+              {/* Logo Box */}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-800/60 border-2 border-emerald-500/30 p-2 flex items-center justify-center shrink-0 shadow-xs">
+                {currentSchool.logoUrl ? (
+                  <img
+                    src={currentSchool.logoUrl}
+                    alt={currentSchool.name}
+                    className="w-full h-full object-contain"
+                  />
+                ) : (
+                  <School className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600 dark:text-emerald-400" />
+                )}
+              </div>
+
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
                     {currentSchool.name}
                   </h1>
-                  <span className="text-xs px-2 py-0.5 rounded font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
+                  <span className="text-xs px-2.5 py-1 rounded-lg font-bold bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     Jenjang {currentSchool.level}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-y-1 gap-x-4 text-xs text-slate-500 dark:text-slate-400 mt-2">
-                  <div className="flex items-center gap-1">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300">NPSN:</span> {currentSchool.npsn}
+
+                {/* Metadata Chips */}
+                <div className="flex flex-wrap items-center gap-y-1.5 gap-x-4 text-xs text-slate-600 dark:text-slate-400">
+                  <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-2.5 py-1 rounded-md border border-slate-200/80 dark:border-slate-700 font-mono font-bold text-slate-900 dark:text-slate-100">
+                    <span className="text-slate-400 font-sans font-medium text-[11px]">NPSN:</span>
+                    <span>{currentSchool.npsn}</span>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-emerald-600" />
+
+                  <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                     <span>{currentSchool.address}</span>
                   </div>
+
                   {currentSchool.phone && (
-                    <div className="flex items-center gap-1">
-                      <Phone className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>{currentSchool.phone}</span>
                     </div>
                   )}
+
                   {currentSchool.email && (
-                    <div className="flex items-center gap-1">
-                      <Mail className="w-3.5 h-3.5 text-emerald-600" />
+                    <div className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                       <span>{currentSchool.email}</span>
                     </div>
                   )}
@@ -224,13 +235,15 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+            {/* Actions */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto shrink-0 pt-2 lg:pt-0">
               <button
+                type="button"
                 onClick={() => setActiveTabSub('kredensial')}
-                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all border ${
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border cursor-pointer ${
                   activeTabSub === 'kredensial'
-                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900'
-                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600'
                 }`}
               >
                 <Lock className="w-3.5 h-3.5 text-emerald-600" />
@@ -238,8 +251,9 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
               </button>
 
               <button
+                type="button"
                 onClick={() => setActiveTab('manajemen-sk')}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
                 <span>Pengajuan SK Sekolah</span>

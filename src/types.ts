@@ -18,6 +18,7 @@ export interface Cabang {
   name: string;
   code: string;
   username?: string;
+  password?: string;
   address?: string;
   phone?: string;
   email?: string;

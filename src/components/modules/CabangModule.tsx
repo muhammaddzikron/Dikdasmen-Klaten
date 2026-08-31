@@ -16,9 +16,12 @@ export const CabangModule: React.FC = () => {
   const [formData, setFormData] = useState<Partial<Cabang>>({
     name: '',
     code: '',
-    ketua: '',
+    username: '',
+    password: '',
+    ketuaName: '',
     address: '',
     phone: '',
+    email: '',
   });
 
   const activeCabangs = cabangList.filter((c) => !c.isDeleted);
@@ -26,18 +29,33 @@ export const CabangModule: React.FC = () => {
     (c) =>
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (c.ketua && c.ketua.toLowerCase().includes(searchQuery.toLowerCase()))
+      (c.username && c.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.ketuaName && c.ketuaName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
-    setFormData({ name: '', code: `PCM-${activeCabangs.length + 1}`, ketua: '', address: '', phone: '' });
+    const nextIdx = activeCabangs.length + 1;
+    setFormData({
+      name: '',
+      code: `PCM-${nextIdx < 10 ? '0' + nextIdx : nextIdx}`,
+      username: `pcm_cabang${nextIdx}`,
+      password: 'cabang123',
+      ketuaName: '',
+      address: '',
+      phone: '',
+      email: '',
+    });
     setIsModalOpen(true);
   };
 
   const handleOpenEdit = (c: Cabang) => {
     setSelectedItem(c);
-    setFormData({ ...c });
+    setFormData({
+      ...c,
+      username: c.username || c.code.toLowerCase().replace(/[^a-z0-9]/g, '_'),
+      password: c.password || 'cabang123',
+    });
     setIsModalOpen(true);
   };
 
@@ -158,7 +176,7 @@ export const CabangModule: React.FC = () => {
               <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <User className="w-3.5 h-3.5 text-slate-400" />
-                  <span>Ketua: <strong className="text-slate-800 dark:text-slate-200">{cabang.ketua || '-'}</strong></span>
+                  <span>Ketua: <strong className="text-slate-800 dark:text-slate-200">{cabang.ketuaName || '-'}</strong></span>
                 </div>
                 {cabang.phone && (
                   <div className="flex items-center gap-2">
@@ -166,6 +184,10 @@ export const CabangModule: React.FC = () => {
                     <span>{cabang.phone}</span>
                   </div>
                 )}
+                <div className="flex items-center justify-between text-[11px] pt-1 bg-slate-50 dark:bg-slate-800/40 px-2 py-1 rounded-lg">
+                  <span className="text-slate-400">Username Login:</span>
+                  <span className="font-mono font-semibold text-sky-600 dark:text-sky-400">{cabang.username || cabang.code}</span>
+                </div>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs">
@@ -206,14 +228,37 @@ export const CabangModule: React.FC = () => {
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold block mb-1">Kode Cabang *</label>
+                  <input
+                    type="text"
+                    required
+                    value={formData.code || ''}
+                    onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                    placeholder="PCM-01"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Username Login</label>
+                  <input
+                    type="text"
+                    value={formData.username || ''}
+                    onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                    placeholder="pcm_klaten"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-mono"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="font-semibold block mb-1">Kode Cabang *</label>
+                <label className="font-semibold block mb-1">Kata Sandi Login (Default: cabang123)</label>
                 <input
                   type="text"
-                  required
-                  value={formData.code || ''}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="PCM-01"
+                  value={formData.password || ''}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  placeholder="cabang123"
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-mono"
                 />
               </div>
@@ -222,22 +267,34 @@ export const CabangModule: React.FC = () => {
                 <label className="font-semibold block mb-1">Ketua PCM / Majelis</label>
                 <input
                   type="text"
-                  value={formData.ketua || ''}
-                  onChange={(e) => setFormData({ ...formData, ketua: e.target.value })}
+                  value={formData.ketuaName || ''}
+                  onChange={(e) => setFormData({ ...formData, ketuaName: e.target.value })}
                   placeholder="Nama Ketua"
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
                 />
               </div>
 
-              <div>
-                <label className="font-semibold block mb-1">Nomor Telepon / Kontak</label>
-                <input
-                  type="text"
-                  value={formData.phone || ''}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  placeholder="0812-xxxx-xxxx"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="font-semibold block mb-1">Nomor Telepon</label>
+                  <input
+                    type="text"
+                    value={formData.phone || ''}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    placeholder="0812-xxxx-xxxx"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-semibold block mb-1">Email Cabang</label>
+                  <input
+                    type="email"
+                    value={formData.email || ''}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    placeholder="pcm@dikdasmenklaten.org"
+                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none"
+                  />
+                </div>
               </div>
 
               <div>

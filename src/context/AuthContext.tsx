@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, UserRole, Sekolah } from '../types';
+import { UserProfile, UserRole, Sekolah, Cabang } from '../types';
 import { logActivity, getStaticFallbackData } from '../lib/firestoreService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -169,13 +169,88 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 3. Cabang PCM Authentication
-      if (identifier.includes('pcm') || identifier.includes('cabang')) {
-        if (password !== 'adminn' && password !== 'admin') {
-          throw new Error('Kata sandi salah. Gunakan password "adminn".');
+      // Fetch Cabang from Firestore combined with fallback for 100% reliable login
+      const fallbackCabangs = getStaticFallbackData().cabangList;
+      const cabangMap = new Map<string, Cabang>();
+
+      fallbackCabangs.forEach((c) => {
+        if (c.code) cabangMap.set(c.code.toLowerCase().trim(), c);
+        if (c.username) cabangMap.set(c.username.toLowerCase().trim(), c);
+        if (c.id) cabangMap.set(c.id, c);
+      });
+
+      try {
+        const snapCabang = await getDocs(collection(db, 'cabang'));
+        if (!snapCabang.empty) {
+          snapCabang.docs.forEach((d) => {
+            const data = d.data() as Partial<Cabang>;
+            const cObj: Cabang = { id: d.id, ...data } as Cabang;
+            if (cObj.code) cabangMap.set(cObj.code.toLowerCase().trim(), cObj);
+            if (cObj.username) cabangMap.set(cObj.username.toLowerCase().trim(), cObj);
+            cabangMap.set(d.id, cObj);
+          });
+        }
+      } catch (err) {
+        console.warn('Firestore fetch during cabang login notice:', err);
+      }
+
+      const allCabangs = Array.from(new Set(cabangMap.values()));
+      const matchedCabang = allCabangs.find((c) => {
+        if (c.isDeleted) return false;
+        const cCode = String(c.code || '').toLowerCase().trim();
+        const cUsername = String(c.username || '').toLowerCase().trim();
+        const cName = String(c.name || '').toLowerCase().trim();
+        const cId = String(c.id || '').toLowerCase().trim();
+        const cEmail = String(c.email || '').toLowerCase().trim();
+
+        // Exact matches
+        if (identifier === cCode || identifier === cUsername || identifier === cId || (cEmail && identifier === cEmail)) {
+          return true;
+        }
+
+        // Match username / name variations (e.g. 'pcm_klatenkota', 'pcm-klaten-kota', 'klaten kota')
+        const cleanId = identifier.replace(/[^a-z0-9]/g, '');
+        const cleanCode = cCode.replace(/[^a-z0-9]/g, '');
+        const cleanUsername = cUsername.replace(/[^a-z0-9]/g, '');
+        const cleanName = cName.replace(/[^a-z0-9]/g, '');
+
+        if (cleanId === cleanCode || (cleanUsername && cleanId === cleanUsername) || (cleanId.length >= 4 && cleanName.includes(cleanId))) {
+          return true;
+        }
+
+        // Generic fallback for keywords like 'cabang' or 'pcm'
+        if (identifier === 'cabang' || identifier === 'pcm') {
+          return true;
+        }
+
+        return false;
+      });
+
+      if (matchedCabang || identifier.includes('pcm') || identifier.includes('cabang')) {
+        const targetCabang = matchedCabang || allCabangs[0];
+        const expectedPassword = String(targetCabang.password || 'cabang123').trim();
+        const isPasswordCorrect =
+          password === expectedPassword ||
+          password === 'cabang123' ||
+          password === 'adminn' ||
+          password === 'admin' ||
+          password.toLowerCase() === expectedPassword.toLowerCase();
+
+        if (!isPasswordCorrect) {
+          throw new Error(
+            `Kata sandi untuk ${targetCabang.name} tidak sesuai. Gunakan kata sandi default "cabang123" atau kata sandi yang telah disimpan.`
+          );
         }
 
         const cabangUser: UserProfile = {
-          ...DEMO_USERS['Cabang'],
+          id: `usr-${targetCabang.id}`,
+          email: targetCabang.email || `pcm@${targetCabang.code.toLowerCase()}.dikdasmen.org`,
+          name: `Operator ${targetCabang.name}`,
+          role: 'Cabang',
+          cabangId: targetCabang.id,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: 'https://images.unsplash.com/photo-1577495508048-b635879837f1?w=150&auto=format&fit=crop&q=80',
         };
 
         setCurrentUser(cabangUser);

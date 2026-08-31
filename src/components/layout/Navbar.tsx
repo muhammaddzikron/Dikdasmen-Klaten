@@ -163,67 +163,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
         </div>
       </div>
 
-      {/* Center: Global Scope & Active Entity Selectors */}
+      {/* Center: Global Scope & Active Entity Selectors (Only shown for Super Admin) */}
       <div className="hidden lg:flex items-center gap-2 text-xs">
-        {currentUser?.role === 'Sekolah' ? (
-          /* Sekolah View: Selector to switch between registered schools */
-          <div className="flex items-center gap-1.5 bg-amber-50 dark:bg-amber-950/30 px-3 py-1 rounded-lg border border-amber-200 dark:border-amber-800/60 shadow-xs">
-            <School className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            <span className="text-[11px] text-amber-800 dark:text-amber-300 font-bold shrink-0">Satuan Pendidikan:</span>
-            <select
-              value={activeSekolah?.id || selectedSekolahId}
-              onChange={(e) => handleSelectActiveSchool(e.target.value)}
-              aria-label="Pilih Satuan Pendidikan Terdaftar"
-              className="bg-transparent text-xs font-bold text-amber-900 dark:text-amber-100 outline-none cursor-pointer max-w-[240px] truncate"
-            >
-              {registeredSchools.map((s) => (
-                <option key={s.id} value={s.id} className="text-slate-900 dark:bg-slate-900 dark:text-white">
-                  {s.name} ({s.npsn})
-                </option>
-              ))}
-            </select>
-          </div>
-        ) : currentUser?.role === 'Cabang' ? (
-          /* Cabang View: Selector to switch between registered Cabang/PCM */
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 bg-sky-50 dark:bg-sky-950/30 px-3 py-1 rounded-lg border border-sky-200 dark:border-sky-800/60 shadow-xs">
-              <Building2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 shrink-0" />
-              <span className="text-[11px] text-sky-800 dark:text-sky-300 font-bold shrink-0">Cabang / PCM:</span>
-              <select
-                value={selectedCabangId !== 'ALL' ? selectedCabangId : currentUser.cabangId || registeredCabangs[0]?.id || 'ALL'}
-                onChange={(e) => handleSelectActiveCabang(e.target.value)}
-                aria-label="Pilih Cabang Terdaftar"
-                className="bg-transparent text-xs font-bold text-sky-900 dark:text-sky-100 outline-none cursor-pointer max-w-[180px] truncate"
-              >
-                {registeredCabangs.map((c) => (
-                  <option key={c.id} value={c.id} className="text-slate-900 dark:bg-slate-900 dark:text-white">
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
-              <School className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-              <select
-                value={selectedSekolahId}
-                onChange={(e) => setSelectedSekolahId(e.target.value)}
-                aria-label="Filter Sekolah Cabang"
-                className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 outline-none cursor-pointer max-w-[160px] truncate"
-              >
-                <option value="ALL" className="dark:bg-slate-900">Semua Sekolah di Cabang</option>
-                {registeredSchools
-                  .filter((s) => selectedCabangId === 'ALL' || s.cabangId === selectedCabangId)
-                  .map((s) => (
-                    <option key={s.id} value={s.id} className="dark:bg-slate-900">
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
-            </div>
-          </div>
-        ) : (
-          /* Super Admin / Admin View: Region-wide scope selectors */
+        {currentUser?.role === 'Super Admin' && (
+          /* Super Admin View: Region-wide scope selectors */
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
@@ -271,24 +214,35 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Quick RBAC Switcher */}
+        {/* Role Badge / Switcher - Role Switch dropdown is ONLY available for Super Admin */}
         <div className="relative">
-          <button
-            id="btn-role-switcher"
-            onClick={() => {
-              setShowRoleMenu(!showRoleMenu);
-              setShowNotifMenu(false);
-              setShowUserMenu(false);
-            }}
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-bold shadow-xs transition-all ${getRoleBadgeClass(
-              currentUser?.role
-            )}`}
-            title="Klik untuk beralih mode Role / Hak Akses Pengguna"
-          >
-            <Shield className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">{currentUser?.role || 'Guest'}</span>
-            <ChevronDown className="w-3 h-3 opacity-70" />
-          </button>
+          {currentUser?.role === 'Super Admin' ? (
+            <button
+              id="btn-role-switcher"
+              onClick={() => {
+                setShowRoleMenu(!showRoleMenu);
+                setShowNotifMenu(false);
+                setShowUserMenu(false);
+              }}
+              className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-bold shadow-xs transition-all cursor-pointer ${getRoleBadgeClass(
+                currentUser?.role
+              )}`}
+              title="Super Admin: Klik untuk beralih mode simulasi / role"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">{currentUser?.role || 'Guest'}</span>
+              <ChevronDown className="w-3 h-3 opacity-70" />
+            </button>
+          ) : (
+            <div
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold shadow-xs ${getRoleBadgeClass(
+                currentUser?.role
+              )}`}
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>{currentUser?.role || 'Guest'}</span>
+            </div>
+          )}
 
           {showRoleMenu && (
             <div
