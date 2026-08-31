@@ -27,10 +27,13 @@ import {
   Check,
   ShieldCheck,
   Edit2,
+  Edit3,
+  X,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Sekolah } from '../../types';
+import { SchoolProfileEditForm } from './SchoolProfileEditForm';
 
 interface SchoolDashboardProps {
   setActiveTab: (tab: string) => void;
@@ -52,7 +55,8 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
     updateSekolah,
   } = useData();
 
-  const [activeTabSub, setActiveTabSub] = useState<'ringkasan' | 'visi-misi' | 'ptk' | 'sk' | 'kredensial'>('ringkasan');
+  const [activeTabSub, setActiveTabSub] = useState<'ringkasan' | 'edit-profil' | 'visi-misi' | 'ptk' | 'sk' | 'kredensial'>('ringkasan');
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editUsername, setEditUsername] = useState('');
   const [editPassword, setEditPassword] = useState('sekolah123');
   const [showPassword, setShowPassword] = useState(false);
@@ -90,6 +94,12 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
     } finally {
       setIsSavingCreds(false);
     }
+  };
+
+  const handleSaveFullProfile = async (updatedData: Partial<Sekolah>) => {
+    if (!currentSchool) return;
+    await updateSekolah(currentSchool.id, updatedData);
+    setIsEditModalOpen(false);
   };
 
   if (!currentSchool) {
@@ -239,6 +249,19 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
             <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 w-full lg:w-auto shrink-0 pt-2 lg:pt-0">
               <button
                 type="button"
+                onClick={() => setActiveTabSub('edit-profil')}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border cursor-pointer ${
+                  activeTabSub === 'edit-profil'
+                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900 shadow-sm'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500 hover:text-emerald-600'
+                }`}
+              >
+                <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Edit Profil Sekolah</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setActiveTabSub('kredensial')}
                 className={`w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs transition-all border cursor-pointer ${
                   activeTabSub === 'kredensial'
@@ -297,10 +320,10 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
       </div>
 
       {/* Sub Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6 text-xs font-bold">
+      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-4 sm:gap-6 text-xs font-bold overflow-x-auto">
         <button
           onClick={() => setActiveTabSub('ringkasan')}
-          className={`pb-3 transition-colors border-b-2 ${
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
             activeTabSub === 'ringkasan'
               ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -309,8 +332,19 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
           Ringkasan & Kepala Sekolah
         </button>
         <button
+          onClick={() => setActiveTabSub('edit-profil')}
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5 cursor-pointer ${
+            activeTabSub === 'edit-profil'
+              ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400 font-black'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+          <span>Edit Formulir Profil Sekolah</span>
+        </button>
+        <button
           onClick={() => setActiveTabSub('visi-misi')}
-          className={`pb-3 transition-colors border-b-2 ${
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
             activeTabSub === 'visi-misi'
               ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -320,7 +354,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
         </button>
         <button
           onClick={() => setActiveTabSub('ptk')}
-          className={`pb-3 transition-colors border-b-2 ${
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
             activeTabSub === 'ptk'
               ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -330,7 +364,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
         </button>
         <button
           onClick={() => setActiveTabSub('sk')}
-          className={`pb-3 transition-colors border-b-2 ${
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 cursor-pointer ${
             activeTabSub === 'sk'
               ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -340,7 +374,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
         </button>
         <button
           onClick={() => setActiveTabSub('kredensial')}
-          className={`pb-3 transition-colors border-b-2 flex items-center gap-1.5 ${
+          className={`pb-3 whitespace-nowrap transition-colors border-b-2 flex items-center gap-1.5 cursor-pointer ${
             activeTabSub === 'kredensial'
               ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
               : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
@@ -350,6 +384,37 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
           <span>Akun & Password Login</span>
         </button>
       </div>
+
+      {/* Tab Content: Edit Profil Lengkap */}
+      {activeTabSub === 'edit-profil' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 sm:p-7 border border-slate-200 dark:border-slate-800 shadow-sm space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-emerald-600" />
+                <span>Edit Formulir Profil Satuan Pendidikan</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Kelola seluruh data identitas, alamat, legalitas, visi misi, kontak, dan kredensial satuan pendidikan <b>{currentSchool.name}</b>.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Buka Tampilan Modal / Dialog</span>
+            </button>
+          </div>
+
+          <SchoolProfileEditForm
+            school={currentSchool}
+            cabangList={cabangList}
+            onSave={handleSaveFullProfile}
+          />
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTabSub === 'ringkasan' && (
@@ -452,6 +517,17 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
                 <span className="text-slate-500 text-[11px] font-semibold">Status Gedung / Tanah</span>
                 <div className="font-medium text-slate-800 dark:text-slate-200">Wakaf Persyarikatan Muhammadiyah</div>
               </div>
+            </div>
+
+            <div className="pt-2 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setActiveTabSub('edit-profil')}
+                className="text-xs font-bold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5 hover:underline cursor-pointer"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Seluruh Formulir Profil Satuan Pendidikan &rarr;</span>
+              </button>
             </div>
           </div>
         </div>
@@ -755,6 +831,47 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
                   Operator sekolah dapat langsung masuk dari halaman login menggunakan username atau NPSN resmi di atas.
                 </div>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Profile Modal Dialog */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 animate-in fade-in zoom-in-95 my-auto">
+            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
+                    Edit Formulir Profil Sekolah/Madrasah
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {currentSchool.name} (NPSN: {currentSchool.npsn})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsEditModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                title="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-5 sm:p-6 overflow-y-auto">
+              <SchoolProfileEditForm
+                school={currentSchool}
+                cabangList={cabangList}
+                onSave={handleSaveFullProfile}
+                onCancel={() => setIsEditModalOpen(false)}
+                isModal={true}
+              />
             </div>
           </div>
         </div>
