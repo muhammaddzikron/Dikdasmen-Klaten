@@ -18,12 +18,12 @@ import { getStaticFallbackData } from '../../lib/firestoreService';
 
 export const LoginView: React.FC = () => {
   const { login, loading } = useAuth();
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('20363271');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeLoginType, setActiveLoginType] = useState<'admin' | 'cabang' | 'sekolah'>('admin');
+  const [activeLoginType, setActiveLoginType] = useState<'sekolah' | 'cabang' | 'admin'>('sekolah');
   const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
   const [showCabangDropdown, setShowCabangDropdown] = useState(false);
 
@@ -82,19 +82,19 @@ export const LoginView: React.FC = () => {
             </div>
           </div>
 
-          {/* Type Selector Buttons: 3 Column for Admin, Cabang, Sekolah */}
+          {/* Type Selector Buttons: 3 Column for Sekolah, Cabang/PCM, Super Admin */}
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs">
             <button
               type="button"
-              onClick={() => setSampleLogin('admin', 'adminn', 'admin')}
+              onClick={() => setSampleLogin('20363271', 'sekolah123', 'sekolah')}
               className={`py-2 px-2 rounded-lg font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
-                activeLoginType === 'admin'
-                  ? 'bg-purple-600 text-white shadow-sm'
+                activeLoginType === 'sekolah'
+                  ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <User className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Super Admin</span>
+              <School className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Sekolah</span>
             </button>
 
             <button
@@ -112,15 +112,15 @@ export const LoginView: React.FC = () => {
 
             <button
               type="button"
-              onClick={() => setSampleLogin('20363271', 'sekolah123', 'sekolah')}
+              onClick={() => setSampleLogin('admin', 'adminn', 'admin')}
               className={`py-2 px-2 rounded-lg font-bold flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
-                activeLoginType === 'sekolah'
-                  ? 'bg-emerald-600 text-white shadow-sm'
+                activeLoginType === 'admin'
+                  ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
             >
-              <School className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Sekolah</span>
+              <User className="w-3.5 h-3.5" />
+              <span className="text-[11px]">Super Admin</span>
             </button>
           </div>
 
