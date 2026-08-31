@@ -221,6 +221,7 @@ export interface SuratKeputusan {
   documentUrl?: string;
   fileNbmUrl?: string;
   fileIjazahUrl?: string;
+  fileSkLamaUrl?: string;
   notes?: string;
   isDeleted?: boolean;
   createdAt?: string;

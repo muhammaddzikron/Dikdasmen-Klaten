@@ -25,6 +25,12 @@ import {
   Building2,
   School,
   Check,
+  Paperclip,
+  ExternalLink,
+  AlertCircle,
+  FileCheck,
+  CreditCard,
+  BookOpen,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -69,9 +75,9 @@ export const SkModule: React.FC = () => {
   const [selectedItem, setSelectedItem] = useState<SuratKeputusan | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
-  // Upload simulation state
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
+  // Upload simulation state per slot
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [uploadingSlot, setUploadingSlot] = useState<string | null>(null);
 
   // Recipient Search & Selector state inside Modal
   const [recipientSearch, setRecipientSearch] = useState('');
@@ -97,6 +103,7 @@ export const SkModule: React.FC = () => {
     documentUrl: '',
     fileNbmUrl: '',
     fileIjazahUrl: '',
+    fileSkLamaUrl: '',
   });
 
   const availableSchools = useMemo(() => {
@@ -190,6 +197,15 @@ export const SkModule: React.FC = () => {
     });
   }, [schoolCandidates, recipientCategoryFilter, recipientSearch]);
 
+  const selectedCandidateInfo = useMemo(() => {
+    if (!formData.targetName) return null;
+    return schoolCandidates.find(
+      (c) =>
+        (formData.targetId && c.id === formData.targetId) ||
+        c.name.toLowerCase() === formData.targetName?.toLowerCase()
+    );
+  }, [formData.targetName, formData.targetId, schoolCandidates]);
+
   const activeSks = useMemo(() => filteredSkList.filter((s) => !s.isDeleted), [filteredSkList]);
 
   const filtered = useMemo(() => {
@@ -226,12 +242,17 @@ export const SkModule: React.FC = () => {
       skEndDate: new Date(Date.now() + 2 * 365 * 24 * 3600 * 1000).toISOString().split('T')[0],
       signerName: 'Dr. H. Muhammad Arifin, M.Pd.',
       signerRole: 'Ketua Majelis Dikdasmen Daerah',
-      documentUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      documentUrl: '',
+      fileIjazahUrl: '',
+      fileNbmUrl: '',
+      fileSkLamaUrl: '',
     });
     setRecipientSearch('');
     setRecipientCategoryFilter('Guru');
     setIsManualInput(false);
     setIsRecipientDropdownOpen(false);
+    setUploadProgress({});
+    setUploadingSlot(null);
     setIsModalOpen(true);
   };
 
@@ -357,27 +378,56 @@ export const SkModule: React.FC = () => {
     }));
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUploadSlot = (
+    slotKey: 'fileIjazahUrl' | 'fileNbmUrl' | 'fileSkLamaUrl',
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    setIsUploading(true);
-    setUploadProgress(20);
+    setUploadingSlot(slotKey);
+    setUploadProgress((prev) => ({ ...prev, [slotKey]: 20 }));
 
     const interval = setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 100) {
+        const current = prev[slotKey] || 20;
+        if (current >= 100) {
           clearInterval(interval);
-          setIsUploading(false);
+          setUploadingSlot(null);
           setFormData((f) => ({
             ...f,
-            documentUrl: `https://storage.googleapis.com/sim-dikdasmen/${file.name}`,
+            [slotKey]: `https://storage.googleapis.com/sim-dikdasmen/${file.name}`,
+            ...(slotKey === 'fileSkLamaUrl'
+              ? { documentUrl: `https://storage.googleapis.com/sim-dikdasmen/${file.name}` }
+              : {}),
           }));
-          return 100;
+          return { ...prev, [slotKey]: 100 };
         }
-        return prev + 30;
+        return { ...prev, [slotKey]: current + 30 };
       });
-    }, 200);
+    }, 150);
+  };
+
+  const handleRemoveAttachment = (slotKey: 'fileIjazahUrl' | 'fileNbmUrl' | 'fileSkLamaUrl') => {
+    setFormData((f) => ({
+      ...f,
+      [slotKey]: '',
+      ...(slotKey === 'fileSkLamaUrl' ? { documentUrl: '' } : {}),
+    }));
+    setUploadProgress((prev) => {
+      const next = { ...prev };
+      delete next[slotKey];
+      return next;
+    });
+  };
+
+  const handleUseCandidateNbm = () => {
+    if (selectedCandidateInfo?.nbm) {
+      setFormData((f) => ({
+        ...f,
+        fileNbmUrl: `https://storage.googleapis.com/sim-dikdasmen/kartu_nbm_${selectedCandidateInfo.nbm}.pdf`,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -447,16 +497,6 @@ export const SkModule: React.FC = () => {
     exportToCSV(`Data_SK_Dikdasmen_${Date.now()}`, rows);
   };
 
-  // Currently selected candidate details if matched with registered PTK
-  const selectedCandidateInfo = useMemo(() => {
-    if (!formData.targetName) return null;
-    return schoolCandidates.find(
-      (c) =>
-        (formData.targetId && c.id === formData.targetId) ||
-        c.name.toLowerCase() === formData.targetName?.toLowerCase()
-    );
-  }, [formData.targetName, formData.targetId, schoolCandidates]);
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -481,13 +521,15 @@ export const SkModule: React.FC = () => {
             <Download className="w-3.5 h-3.5" />
             <span>CSV</span>
           </button>
-          <button
-            onClick={handleOpenAdd}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Ajukan SK Baru</span>
-          </button>
+          {currentUser?.role !== 'Cabang' && (
+            <button
+              onClick={handleOpenAdd}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Ajukan SK Baru</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -568,8 +610,57 @@ export const SkModule: React.FC = () => {
                       <td className="p-3.5 text-slate-700 dark:text-slate-300 font-medium">{school?.name || '-'}</td>
                       <td className="p-3.5 font-semibold text-slate-800 dark:text-slate-200">{sk.targetName || '-'}</td>
                       <td className="p-3.5">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">{sk.type}</span>
-                        <span className="text-slate-400 ml-1">({sk.submissionType})</span>
+                        <div className="font-semibold text-slate-800 dark:text-slate-200">{sk.type}</div>
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            sk.submissionType === 'Baru'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                              : 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300'
+                          }`}>
+                            {sk.submissionType}
+                          </span>
+                          {sk.submissionType === 'Baru' ? (
+                            <>
+                              {sk.fileIjazahUrl && (
+                                <a
+                                  href={sk.fileIjazahUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 hover:text-emerald-700 dark:hover:text-emerald-300"
+                                  title="Lihat Ijazah Terakhir"
+                                >
+                                  <GraduationCap className="w-2.5 h-2.5" />
+                                  <span>Ijazah</span>
+                                </a>
+                              )}
+                              {sk.fileNbmUrl && (
+                                <a
+                                  href={sk.fileNbmUrl}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 hover:text-emerald-700 dark:hover:text-emerald-300"
+                                  title="Lihat Kartu NBM"
+                                >
+                                  <CreditCard className="w-2.5 h-2.5" />
+                                  <span>NBM</span>
+                                </a>
+                              )}
+                            </>
+                          ) : (
+                            (sk.fileSkLamaUrl || sk.documentUrl) && (
+                              <a
+                                href={sk.fileSkLamaUrl || sk.documentUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-blue-100 dark:hover:bg-blue-900/60 hover:text-blue-700 dark:hover:text-blue-300"
+                                title="Lihat SK Terakhir"
+                              >
+                                <FileText className="w-2.5 h-2.5" />
+                                <span>SK Lama</span>
+                              </a>
+                            )
+                          )}
+                        </div>
                       </td>
                       <td className="p-3.5 text-slate-600 dark:text-slate-400">
                         {sk.skStartDate && sk.skEndDate ? `${sk.skStartDate} s/d ${sk.skEndDate}` : '-'}
@@ -617,13 +708,17 @@ export const SkModule: React.FC = () => {
                             </>
                           )}
 
-                          <button
-                            onClick={() => handleOpenEdit(sk)}
-                            className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
-                            title="Edit Data SK"
-                          >
-                            <Pencil className="w-4 h-4 text-amber-600" />
-                          </button>
+                          {(currentUser?.role === 'Super Admin' ||
+                            currentUser?.role === 'Admin' ||
+                            (currentUser?.role === 'Sekolah' && currentUser.sekolahId === sk.schoolId)) && (
+                            <button
+                              onClick={() => handleOpenEdit(sk)}
+                              className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              title="Edit Data SK"
+                            >
+                              <Pencil className="w-4 h-4 text-amber-600" />
+                            </button>
+                          )}
 
                           <button
                             onClick={() => handlePrint(sk)}
@@ -1065,42 +1160,304 @@ export const SkModule: React.FC = () => {
                 </div>
               </div>
 
-              {/* Upload Document / PDF */}
+              {/* Upload Documents Conditionally based on submissionType */}
               <div className="pt-2">
-                <label className="font-semibold block mb-1">Lampiran Berkas PDF / Dokumen Pendukung (NBM, Ijazah)</label>
-                <div className="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-4 text-center hover:border-emerald-500 transition-colors">
-                  <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
-                  <p className="text-slate-600 dark:text-slate-400 text-xs">Pilih file PDF atau drag & drop ke sini</p>
-                  <input
-                    type="file"
-                    accept=".pdf,.doc,.docx,.png,.jpg"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="sk-file-input"
-                  />
-                  <label
-                    htmlFor="sk-file-input"
-                    className="mt-2 inline-block px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-semibold cursor-pointer"
-                  >
-                    Telusuri Berkas
-                  </label>
-
-                  {isUploading && (
-                    <div className="mt-3">
-                      <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                        <div className="bg-emerald-600 h-1.5 transition-all duration-300" style={{ width: `${uploadProgress}%` }} />
+                {formData.submissionType === 'Baru' ? (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                          Lampiran Berkas Persyaratan (Pengajuan Baru) *
+                        </label>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Untuk pengajuan SK Baru, wajib melampirkan berkas scan <strong>Ijazah Terakhir</strong> dan <strong>Kartu Anggota NBM</strong>.
+                        </span>
                       </div>
-                      <span className="text-[10px] text-slate-400 mt-1 block">Mengunggah... {uploadProgress}%</span>
+                      <span className="px-2 py-0.5 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold text-[10px] rounded-full border border-emerald-200 dark:border-emerald-800 shrink-0">
+                        SK Baru
+                      </span>
                     </div>
-                  )}
 
-                  {formData.documentUrl && !isUploading && (
-                    <div className="mt-2 text-emerald-600 font-semibold text-[11px] flex items-center justify-center gap-1">
-                      <CheckCircle className="w-3.5 h-3.5" />
-                      <span>Berkas berhasil terlampir</span>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                      {/* 1. Ijazah Terakhir */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        formData.fileIjazahUrl
+                          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800 dark:text-slate-200">
+                            <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span>1. Ijazah Terakhir *</span>
+                          </div>
+                          {formData.fileIjazahUrl && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Terlampir</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {uploadingSlot === 'fileIjazahUrl' ? (
+                          <div className="py-3">
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-emerald-600 h-1.5 transition-all duration-300"
+                                style={{ width: `${uploadProgress['fileIjazahUrl'] || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-500 mt-1 block text-center">
+                              Mengunggah Ijazah... {uploadProgress['fileIjazahUrl']}%
+                            </span>
+                          </div>
+                        ) : formData.fileIjazahUrl ? (
+                          <div className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex items-center gap-2">
+                              <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <div className="truncate">
+                                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {formData.fileIjazahUrl.split('/').pop() || 'ijazah_terakhir.pdf'}
+                                </div>
+                                <div className="text-[9px] text-slate-400">Scan Ijazah Terakhir</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <a
+                                href={formData.fileIjazahUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300"
+                                title="Lihat Berkas"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment('fileIjazahUrl')}
+                                className="p-1.5 rounded hover:bg-rose-50 text-rose-500"
+                                title="Hapus / Ganti Berkas"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                              onChange={(e) => handleFileUploadSlot('fileIjazahUrl', e)}
+                              className="hidden"
+                              id="upload-ijazah-input"
+                            />
+                            <label
+                              htmlFor="upload-ijazah-input"
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Unggah Ijazah Terakhir (PDF/Foto)</span>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 2. Kartu NBM */}
+                      <div className={`p-3.5 rounded-xl border transition-all ${
+                        formData.fileNbmUrl
+                          ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                      }`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800 dark:text-slate-200">
+                            <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                            <span>2. Kartu Anggota NBM *</span>
+                          </div>
+                          {formData.fileNbmUrl && (
+                            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Terlampir</span>
+                            </span>
+                          )}
+                        </div>
+
+                        {uploadingSlot === 'fileNbmUrl' ? (
+                          <div className="py-3">
+                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                              <div
+                                className="bg-emerald-600 h-1.5 transition-all duration-300"
+                                style={{ width: `${uploadProgress['fileNbmUrl'] || 0}%` }}
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-500 mt-1 block text-center">
+                              Mengunggah NBM... {uploadProgress['fileNbmUrl']}%
+                            </span>
+                          </div>
+                        ) : formData.fileNbmUrl ? (
+                          <div className="bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-2">
+                            <div className="min-w-0 flex items-center gap-2">
+                              <FileCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                              <div className="truncate">
+                                <div className="text-[11px] font-bold text-slate-800 dark:text-slate-200 truncate">
+                                  {formData.fileNbmUrl.split('/').pop() || 'kartu_nbm.pdf'}
+                                </div>
+                                <div className="text-[9px] text-slate-400">Scan Kartu Anggota NBM</div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <a
+                                href={formData.fileNbmUrl}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="p-1.5 rounded bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-600 dark:text-slate-300"
+                                title="Lihat Berkas"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment('fileNbmUrl')}
+                                className="p-1.5 rounded hover:bg-rose-50 text-rose-500"
+                                title="Hapus / Ganti Berkas"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5">
+                            <input
+                              type="file"
+                              accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                              onChange={(e) => handleFileUploadSlot('fileNbmUrl', e)}
+                              className="hidden"
+                              id="upload-nbm-input"
+                            />
+                            <label
+                              htmlFor="upload-nbm-input"
+                              className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg border border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800/80 hover:bg-emerald-50 dark:hover:bg-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-colors"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-slate-400" />
+                              <span>Unggah Kartu NBM (PDF/Foto)</span>
+                            </label>
+                            {selectedCandidateInfo?.nbm && (
+                              <button
+                                type="button"
+                                onClick={handleUseCandidateNbm}
+                                className="w-full py-1 text-[10px] text-emerald-600 dark:text-emerald-400 hover:underline font-semibold flex items-center justify-center gap-1"
+                              >
+                                <Paperclip className="w-3 h-3" />
+                                <span>Gunakan NBM dari Data PTK ({selectedCandidateInfo.nbm})</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <label className="font-bold text-slate-800 dark:text-slate-200 block text-xs">
+                          Lampiran Berkas Persyaratan (Perpanjangan Masa Berlaku) *
+                        </label>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                          Untuk perpanjangan masa berlaku, wajib melampirkan salinan dokumen <strong>SK Terakhir / SK Periode Sebelumnya</strong> yang akan diperpanjang.
+                        </span>
+                      </div>
+                      <span className="px-2 py-0.5 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold text-[10px] rounded-full border border-blue-200 dark:border-blue-800 shrink-0">
+                        Perpanjangan SK
+                      </span>
+                    </div>
+
+                    <div className={`p-4 rounded-xl border transition-all mt-2 ${
+                      formData.fileSkLamaUrl || formData.documentUrl
+                        ? 'bg-emerald-50/50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800/60'
+                        : 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-emerald-400'
+                    }`}>
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-1.5 font-bold text-xs text-slate-800 dark:text-slate-200">
+                          <FileText className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                          <span>Dokumen SK Terakhir / SK Sebelumnya *</span>
+                        </div>
+                        {(formData.fileSkLamaUrl || formData.documentUrl) && (
+                          <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle className="w-3.5 h-3.5" />
+                            <span>SK Terakhir Terlampir</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {uploadingSlot === 'fileSkLamaUrl' ? (
+                        <div className="py-4">
+                          <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-emerald-600 h-1.5 transition-all duration-300"
+                              style={{ width: `${uploadProgress['fileSkLamaUrl'] || 0}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-500 mt-1 block text-center">
+                            Mengunggah Dokumen SK Terakhir... {uploadProgress['fileSkLamaUrl']}%
+                          </span>
+                        </div>
+                      ) : (formData.fileSkLamaUrl || formData.documentUrl) ? (
+                        <div className="bg-white dark:bg-slate-800 p-3 rounded-lg border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0 font-bold">
+                              <FileText className="w-4 h-4" />
+                            </div>
+                            <div className="truncate">
+                              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                                {(formData.fileSkLamaUrl || formData.documentUrl || '').split('/').pop() || 'dokumen_sk_terakhir.pdf'}
+                              </div>
+                              <div className="text-[10px] text-slate-400">Salinan Dokumen SK Periode Sebelumnya</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <a
+                              href={formData.fileSkLamaUrl || formData.documentUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-2.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-medium flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Lihat</span>
+                            </a>
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveAttachment('fileSkLamaUrl')}
+                              className="p-1.5 rounded-lg hover:bg-rose-50 text-rose-500 transition-colors"
+                              title="Hapus / Ganti Berkas"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-4 text-center hover:border-emerald-500 transition-colors bg-white dark:bg-slate-800/60">
+                          <Upload className="w-6 h-6 text-slate-400 mx-auto mb-1" />
+                          <p className="text-slate-600 dark:text-slate-400 text-xs font-medium">
+                            Pilih file SK Terakhir (PDF / Dokumen) atau drag & drop ke sini
+                          </p>
+                          <input
+                            type="file"
+                            accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
+                            onChange={(e) => handleFileUploadSlot('fileSkLamaUrl', e)}
+                            className="hidden"
+                            id="upload-sk-lama-input"
+                          />
+                          <label
+                            htmlFor="upload-sk-lama-input"
+                            className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-sm transition-all"
+                          >
+                            <Upload className="w-3.5 h-3.5" />
+                            <span>Telusuri File SK Terakhir</span>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -1185,9 +1542,82 @@ export const SkModule: React.FC = () => {
               <div className="space-y-1.5 text-slate-700 dark:text-slate-300">
                 <div><strong>Penerima:</strong> {selectedItem.targetName || '-'}</div>
                 <div><strong>Jenis SK:</strong> {selectedItem.type}</div>
+                <div><strong>Tipe Pengajuan:</strong> {selectedItem.submissionType}</div>
                 <div><strong>Masa Berlaku:</strong> {selectedItem.skStartDate} s/d {selectedItem.skEndDate}</div>
                 <div><strong>Penandatangan:</strong> {selectedItem.signerName} ({selectedItem.signerRole})</div>
                 <div><strong>Status:</strong> {selectedItem.status}</div>
+              </div>
+
+              {/* Lampiran Dokumen */}
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                <div className="font-bold text-[11px] text-slate-800 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
+                  <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Berkas Dokumen Persyaratan ({selectedItem.submissionType}):</span>
+                </div>
+
+                {selectedItem.submissionType === 'Baru' ? (
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <GraduationCap className="w-3 h-3 text-emerald-600" />
+                        <span>Ijazah Terakhir</span>
+                      </div>
+                      {selectedItem.fileIjazahUrl ? (
+                        <a
+                          href={selectedItem.fileIjazahUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold hover:underline"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>Lihat Berkas Ijazah</span>
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 mt-1 block">Belum dilampirkan</span>
+                      )}
+                    </div>
+
+                    <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                      <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                        <CreditCard className="w-3 h-3 text-emerald-600" />
+                        <span>Kartu Anggota NBM</span>
+                      </div>
+                      {selectedItem.fileNbmUrl ? (
+                        <a
+                          href={selectedItem.fileNbmUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-1 inline-flex items-center gap-1 text-[10px] text-emerald-600 font-bold hover:underline"
+                        >
+                          <ExternalLink className="w-2.5 h-2.5" />
+                          <span>Lihat Kartu NBM</span>
+                        </a>
+                      ) : (
+                        <span className="text-[10px] text-slate-400 mt-1 block">Belum dilampirkan</span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-[11px]">
+                    <div className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                      <FileText className="w-3 h-3 text-blue-600" />
+                      <span>Dokumen SK Terakhir / Sebelumnya</span>
+                    </div>
+                    {(selectedItem.fileSkLamaUrl || selectedItem.documentUrl) ? (
+                      <a
+                        href={selectedItem.fileSkLamaUrl || selectedItem.documentUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="mt-1 inline-flex items-center gap-1 text-[10px] text-blue-600 font-bold hover:underline"
+                      >
+                        <ExternalLink className="w-2.5 h-2.5" />
+                        <span>Lihat Dokumen SK Terakhir</span>
+                      </a>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 mt-1 block">Belum dilampirkan</span>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
