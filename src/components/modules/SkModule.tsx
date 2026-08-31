@@ -107,8 +107,20 @@ export const SkModule: React.FC = () => {
   });
 
   const availableSchools = useMemo(() => {
+    if (currentUser?.role === 'Sekolah') {
+      const userSchoolId = currentUser.sekolahId;
+      const matched = sekolahList.filter(
+        (s) => !s.isDeleted && (s.id === userSchoolId || s.npsn === userSchoolId)
+      );
+      if (matched.length > 0) return matched;
+      return activeSekolahList.length > 0 ? [activeSekolahList[0]] : [];
+    }
+    if (currentUser?.role === 'Cabang') {
+      const userCabangId = currentUser.cabangId;
+      return sekolahList.filter((s) => !s.isDeleted && s.cabangId === userCabangId);
+    }
     return sekolahList.filter((s) => !s.isDeleted);
-  }, [sekolahList]);
+  }, [sekolahList, currentUser, activeSekolahList]);
 
   // Close recipient dropdown on outside click
   useEffect(() => {
@@ -224,13 +236,17 @@ export const SkModule: React.FC = () => {
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
-    const defaultSchoolId = currentUser?.sekolahId || activeSekolahList[0]?.id || availableSchools[0]?.id || '';
+    const defaultSchoolId =
+      (currentUser?.role === 'Sekolah' ? (currentUser.sekolahId || availableSchools[0]?.id) : null) ||
+      availableSchools[0]?.id ||
+      activeSekolahList[0]?.id ||
+      '';
     
     // Find initial candidate from that school
     const firstGuru = guruList.find((g) => !g.isDeleted && g.schoolId === defaultSchoolId);
 
     setFormData({
-      skNumber: `DIKDASMEN/${new Date().getFullYear()}/${Math.floor(1000 + Math.random() * 9000)}`,
+      skNumber: '',
       title: 'Pengangkatan Guru Tetap Yayasan',
       schoolId: defaultSchoolId,
       type: 'SK Guru',
@@ -434,16 +450,27 @@ export const SkModule: React.FC = () => {
     e.preventDefault();
     if (!formData.title || !formData.schoolId) return;
 
+    const dataToSave = {
+      ...formData,
+      skNumber: formData.skNumber?.trim() || '',
+    };
+
     if (selectedItem) {
-      await updateSk(selectedItem.id, formData);
+      await updateSk(selectedItem.id, dataToSave);
     } else {
-      await addSk(formData as Omit<SuratKeputusan, 'id'>);
+      await addSk(dataToSave as Omit<SuratKeputusan, 'id'>);
     }
     setIsModalOpen(false);
   };
 
   const handleApprove = async (sk: SuratKeputusan) => {
-    const officialSkNumber = sk.skNumber.startsWith('DIKDASMEN')
+    const isAutoOrDraft =
+      !sk.skNumber ||
+      sk.skNumber.startsWith('DIKDASMEN') ||
+      sk.skNumber.includes('Otomatis') ||
+      sk.skNumber.includes('Menunggu');
+
+    const officialSkNumber = isAutoOrDraft
       ? `${Math.floor(100 + Math.random() * 900)}/KEP/III.4/D/${new Date().getFullYear()}`
       : sk.skNumber;
 
@@ -604,7 +631,13 @@ export const SkModule: React.FC = () => {
                       <td className="p-3.5">
                         <div className="font-bold text-slate-900 dark:text-slate-100">{sk.title}</div>
                         <div className="font-mono text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5">
-                          {sk.skNumber}
+                          {sk.skNumber && !sk.skNumber.includes('Otomatis') && !sk.skNumber.includes('Menunggu') ? (
+                            <span>{sk.skNumber}</span>
+                          ) : (
+                            <span className="text-amber-700 dark:text-amber-300 font-sans text-[10px] bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800/50 inline-block font-medium">
+                              (Otomatis disesuaikan Admin)
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="p-3.5 text-slate-700 dark:text-slate-300 font-medium">{school?.name || '-'}</td>
@@ -789,19 +822,37 @@ export const SkModule: React.FC = () => {
 
                 <div>
                   <label className="font-semibold block mb-1">Satuan Pendidikan Pemohon *</label>
-                  <select
-                    required
-                    value={formData.schoolId || ''}
-                    onChange={(e) => handleSchoolChange(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
-                  >
-                    <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
-                    {availableSchools.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.level}) - {s.npsn}
-                      </option>
-                    ))}
-                  </select>
+                  {currentUser?.role === 'Sekolah' ? (
+                    <div className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 font-semibold text-slate-800 dark:text-slate-200 flex items-center justify-between">
+                      <div className="flex items-center gap-2 truncate">
+                        <School className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="truncate text-xs">
+                          {availableSchools.find((s) => s.id === formData.schoolId)?.name ||
+                            availableSchools[0]?.name ||
+                            'Satuan Pendidikan Anda'}{' '}
+                          ({availableSchools.find((s) => s.id === formData.schoolId)?.level || availableSchools[0]?.level || ''}) -{' '}
+                          {availableSchools.find((s) => s.id === formData.schoolId)?.npsn || availableSchools[0]?.npsn || ''}
+                        </span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full shrink-0 ml-2">
+                        Sekolah Anda
+                      </span>
+                    </div>
+                  ) : (
+                    <select
+                      required
+                      value={formData.schoolId || ''}
+                      onChange={(e) => handleSchoolChange(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-semibold"
+                    >
+                      <option value="" disabled>-- Pilih Satuan Pendidikan --</option>
+                      {availableSchools.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.level}) - {s.npsn}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
                 <div>
@@ -1130,13 +1181,40 @@ export const SkModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="font-semibold block mb-1">Draft Nomor SK</label>
-                  <input
-                    type="text"
-                    value={formData.skNumber || ''}
-                    onChange={(e) => setFormData({ ...formData, skNumber: e.target.value })}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-mono"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="font-semibold block text-xs">Draft Nomor SK</label>
+                    <span className="text-[10px] text-amber-700 dark:text-amber-300 font-bold bg-amber-50 dark:bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-200 dark:border-amber-800/60">
+                      (Otomatis) Disesuaikan dari Admin
+                    </span>
+                  </div>
+                  {currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin' ? (
+                    <div>
+                      <input
+                        type="text"
+                        value={formData.skNumber || ''}
+                        onChange={(e) => setFormData({ ...formData, skNumber: e.target.value })}
+                        placeholder="(Otomatis disesuaikan dari Admin)"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none font-mono text-xs focus:ring-2 focus:ring-emerald-500"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Dapat dikosongi. Nomor SK resmi otomatis diterbitkan sistem saat verifikasi.
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        type="text"
+                        disabled
+                        readOnly
+                        value={formData.skNumber || ''}
+                        placeholder="(Otomatis disesuaikan dari Admin)"
+                        className="w-full px-3 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 font-mono text-xs text-slate-500 cursor-not-allowed placeholder:text-slate-400"
+                      />
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 block">
+                        Nomor SK dikosongi dan akan ditentukan serta diterbitkan resmi secara otomatis oleh Super Admin.
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -1535,7 +1613,11 @@ export const SkModule: React.FC = () => {
             <div className="p-6 my-4 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3 text-xs">
               <div className="text-center border-b border-slate-300 dark:border-slate-700 pb-3">
                 <div className="font-black text-sm text-slate-900 dark:text-white">SURAT KEPUTUSAN</div>
-                <div className="font-mono text-emerald-600 font-bold">{selectedItem.skNumber}</div>
+                <div className="font-mono text-emerald-600 font-bold">
+                  {selectedItem.skNumber && !selectedItem.skNumber.includes('Otomatis') && !selectedItem.skNumber.includes('Menunggu')
+                    ? selectedItem.skNumber
+                    : '(Nomor SK Otomatis dari Super Admin saat Verifikasi)'}
+                </div>
                 <div className="text-slate-500 mt-1">Tentang: {selectedItem.title}</div>
               </div>
 
