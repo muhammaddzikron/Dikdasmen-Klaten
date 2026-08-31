@@ -52,8 +52,13 @@ export const LoginView: React.FC = () => {
       <div className="max-w-md w-full relative z-10 space-y-6">
         {/* Header Logo */}
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 bg-gradient-to-tr from-emerald-600 via-teal-600 to-sky-600 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-teal-600/20 ring-4 ring-emerald-500/10">
-            <GraduationCap className="w-9 h-9 text-white" />
+          <div className="w-20 h-20 bg-white/95 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-teal-600/20 ring-4 ring-emerald-500/20 p-2 backdrop-blur-xs">
+            <img
+              src="https://sekolah.dikdasmen.id/gambar/logo.png?v=1667216049"
+              alt="Logo SIM Dikdasmen"
+              className="w-full h-full object-contain drop-shadow-xs"
+              referrerPolicy="no-referrer"
+            />
           </div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
             SIM DIKDASMEN

@@ -1,3 +1,12 @@
+export const DEFAULT_SCHOOL_LOGO = 'https://sekolah.dikdasmen.id/gambar/logo.png?v=1667216049';
+
+export const getSchoolLogo = (logoUrl?: string | null): string => {
+  if (!logoUrl || logoUrl.trim() === '' || logoUrl.includes('unsplash.com')) {
+    return DEFAULT_SCHOOL_LOGO;
+  }
+  return logoUrl;
+};
+
 export type UserRole = 'Super Admin' | 'Admin' | 'Cabang' | 'Sekolah';
 
 export interface UserProfile {

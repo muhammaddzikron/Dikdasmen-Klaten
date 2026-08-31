@@ -32,7 +32,7 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Sekolah } from '../../types';
+import { Sekolah, getSchoolLogo } from '../../types';
 import { SchoolProfileEditForm } from './SchoolProfileEditForm';
 
 interface SchoolDashboardProps {
@@ -194,16 +194,13 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
           <div className="flex flex-col lg:flex-row gap-6 items-start justify-between">
             <div className="flex items-start gap-4 sm:gap-5 w-full lg:w-auto">
               {/* Logo Box */}
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-slate-800 dark:to-slate-800/60 border-2 border-emerald-500/30 p-2 flex items-center justify-center shrink-0 shadow-xs">
-                {currentSchool.logoUrl ? (
-                  <img
-                    src={currentSchool.logoUrl}
-                    alt={currentSchool.name}
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <School className="w-8 h-8 sm:w-10 sm:h-10 text-emerald-600 dark:text-emerald-400" />
-                )}
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white dark:bg-slate-800 border-2 border-emerald-500/30 p-2 flex items-center justify-center shrink-0 shadow-xs">
+                <img
+                  src={getSchoolLogo(currentSchool.logoUrl)}
+                  alt={currentSchool.name}
+                  className="w-full h-full object-contain"
+                  referrerPolicy="no-referrer"
+                />
               </div>
 
               <div className="space-y-2 flex-1">

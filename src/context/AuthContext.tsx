@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, UserRole, Sekolah, Cabang } from '../types';
+import { UserProfile, UserRole, Sekolah, Cabang, DEFAULT_SCHOOL_LOGO, getSchoolLogo } from '../types';
 import { logActivity, getStaticFallbackData } from '../lib/firestoreService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -57,7 +57,7 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     role: 'Sekolah',
     createdAt: new Date().toISOString(),
     isActive: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: DEFAULT_SCHOOL_LOGO,
     phone: '0272-321001',
   },
 };
@@ -348,9 +348,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           cabangId: matchedSchool.cabangId || 'cabang-klaten-kota',
           createdAt: new Date().toISOString(),
           isActive: true,
-          avatarUrl:
-            matchedSchool.logoUrl ||
-            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          avatarUrl: getSchoolLogo(matchedSchool.logoUrl),
           phone: matchedSchool.operatorPhone || matchedSchool.phone || '0272-321001',
         };
 
@@ -385,7 +383,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           cabangId: defaultSchool?.cabangId,
           createdAt: new Date().toISOString(),
           isActive: true,
-          avatarUrl: defaultSchool?.logoUrl || DEMO_USERS['Sekolah'].avatarUrl,
+          avatarUrl: getSchoolLogo(defaultSchool?.logoUrl),
           phone: defaultSchool?.operatorPhone || defaultSchool?.phone || DEMO_USERS['Sekolah'].phone,
         };
 

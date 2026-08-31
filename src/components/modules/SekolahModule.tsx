@@ -34,7 +34,15 @@ import {
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
-import { Sekolah, SchoolLevel, SchoolStatus, SchoolAccreditation, CapabilityCategory } from '../../types';
+import {
+  Sekolah,
+  SchoolLevel,
+  SchoolStatus,
+  SchoolAccreditation,
+  CapabilityCategory,
+  DEFAULT_SCHOOL_LOGO,
+  getSchoolLogo,
+} from '../../types';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
 
 export const SekolahModule: React.FC = () => {
@@ -109,7 +117,7 @@ export const SekolahModule: React.FC = () => {
     sosmed: '',
     operatorName: '',
     operatorPhone: '',
-    logoUrl: '',
+    logoUrl: DEFAULT_SCHOOL_LOGO,
     bannerUrl: '',
     description: '',
   });
@@ -238,7 +246,7 @@ export const SekolahModule: React.FC = () => {
       sosmed: '@dikdasmen_klaten',
       operatorName: '',
       operatorPhone: '',
-      logoUrl: '',
+      logoUrl: DEFAULT_SCHOOL_LOGO,
       bannerUrl: '',
       description: '',
     });
@@ -564,12 +572,10 @@ export const SekolahModule: React.FC = () => {
                       <td className="p-3.5 font-semibold text-slate-900 dark:text-slate-100">
                         <div className="flex items-center gap-2.5">
                           <img
-                            src={
-                              school.logoUrl ||
-                              'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80'
-                            }
+                            src={getSchoolLogo(school.logoUrl)}
                             alt={school.name}
-                            className="w-8 h-8 rounded-lg object-cover ring-1 ring-slate-200 dark:ring-slate-700 flex-shrink-0"
+                            className="w-8 h-8 rounded-lg object-contain bg-white ring-1 ring-slate-200 dark:ring-slate-700 flex-shrink-0 p-0.5"
+                            referrerPolicy="no-referrer"
                           />
                           <div>
                             <div className="font-bold text-slate-900 dark:text-white">{school.name}</div>
@@ -1204,12 +1210,10 @@ export const SekolahModule: React.FC = () => {
                   {/* Top Bar Info */}
                   <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50">
                     <img
-                      src={
-                        selectedItem.logoUrl ||
-                        'https://images.unsplash.com/photo-1546410531-bb4caa6b424d?w=150&auto=format&fit=crop&q=80'
-                      }
+                      src={getSchoolLogo(selectedItem.logoUrl)}
                       alt={selectedItem.name}
-                      className="w-16 h-16 rounded-xl object-cover ring-2 ring-emerald-500/20 flex-shrink-0"
+                      className="w-16 h-16 rounded-xl object-contain bg-white ring-2 ring-emerald-500/20 flex-shrink-0 p-1"
+                      referrerPolicy="no-referrer"
                     />
                     <div className="space-y-1">
                       <h3 className="text-base font-bold text-slate-900 dark:text-white">{selectedItem.name}</h3>
