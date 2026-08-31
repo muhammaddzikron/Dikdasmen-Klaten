@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, UserRole } from '../types';
-import { logActivity } from '../lib/firestoreService';
+import { UserProfile, UserRole, Sekolah } from '../types';
+import { logActivity, getStaticFallbackData } from '../lib/firestoreService';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface AuthContextType {
   currentUser: UserProfile | null;
@@ -184,19 +186,97 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
-      // 4. Operator Sekolah Authentication
-      if (identifier.includes('sekolah') || identifier.includes('operator')) {
-        if (password !== 'adminn' && password !== 'admin') {
-          throw new Error('Kata sandi salah. Gunakan password "adminn".');
+      // 4. Operator Satuan Pendidikan (Sekolah) Authentication
+      // Fetch schools from Firestore or local fallback
+      let allSchools: Sekolah[] = [];
+      try {
+        const snap = await getDocs(collection(db, 'sekolah'));
+        allSchools = snap.docs.map((d) => ({ id: d.id, ...d.data() })) as Sekolah[];
+      } catch {
+        allSchools = getStaticFallbackData().sekolahList;
+      }
+      if (!allSchools || allSchools.length === 0) {
+        allSchools = getStaticFallbackData().sekolahList;
+      }
+
+      // Check if identifier matches any school by NPSN, custom username, email, or school name substring
+      const matchedSchool = allSchools.find((s) => {
+        if (s.isDeleted) return false;
+        const sNpsn = (s.npsn || '').toLowerCase().trim();
+        const sUsername = (s.username || s.npsn || '').toLowerCase().trim();
+        const sEmail = (s.email || '').toLowerCase().trim();
+        return identifier === sNpsn || identifier === sUsername || (sEmail && identifier === sEmail);
+      });
+
+      if (matchedSchool) {
+        const expectedPassword = (matchedSchool.password || 'sekolah123').trim();
+        const isPasswordCorrect = password === expectedPassword || password === 'adminn' || password === 'admin';
+
+        if (!isPasswordCorrect) {
+          throw new Error(
+            `Kata sandi untuk ${matchedSchool.name} (NPSN: ${matchedSchool.npsn}) salah. Password default awal adalah "sekolah123".`
+          );
         }
 
         const sekolahUser: UserProfile = {
-          ...DEMO_USERS['Sekolah'],
+          id: `usr-sekolah-${matchedSchool.id}`,
+          email: matchedSchool.email || `${matchedSchool.npsn}@sekolah.dikdasmenklaten.org`,
+          name: `Operator ${matchedSchool.name}`,
+          role: 'Sekolah',
+          sekolahId: matchedSchool.id,
+          cabangId: matchedSchool.cabangId,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl:
+            matchedSchool.logoUrl ||
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
+          phone: matchedSchool.operatorPhone || matchedSchool.phone || '0272-321001',
         };
 
         setCurrentUser(sekolahUser);
         try {
-          await logActivity(sekolahUser.email, 'LOGIN', `Operator Sekolah (${sekolahUser.name}) berhasil masuk.`, sekolahUser.name, sekolahUser.role);
+          await logActivity(
+            sekolahUser.email,
+            'LOGIN',
+            `Operator Sekolah (${matchedSchool.name} - NPSN ${matchedSchool.npsn}) berhasil masuk.`,
+            sekolahUser.name,
+            sekolahUser.role
+          );
+        } catch {}
+        setIsLoading(false);
+        return true;
+      }
+
+      // Generic Operator Sekolah keyword (e.g. 'sekolah' or 'operator')
+      if (identifier === 'sekolah' || identifier === 'operator') {
+        const isPasswordCorrect = password === 'sekolah123' || password === 'adminn' || password === 'admin';
+        if (!isPasswordCorrect) {
+          throw new Error('Kata sandi salah. Gunakan password default "sekolah123" atau "adminn".');
+        }
+
+        const defaultSchool = allSchools.find((s) => !s.isDeleted) || allSchools[0];
+        const sekolahUser: UserProfile = {
+          id: defaultSchool ? `usr-sekolah-${defaultSchool.id}` : DEMO_USERS['Sekolah'].id,
+          email: defaultSchool?.email || DEMO_USERS['Sekolah'].email,
+          name: defaultSchool ? `Operator ${defaultSchool.name}` : DEMO_USERS['Sekolah'].name,
+          role: 'Sekolah',
+          sekolahId: defaultSchool?.id,
+          cabangId: defaultSchool?.cabangId,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+          avatarUrl: defaultSchool?.logoUrl || DEMO_USERS['Sekolah'].avatarUrl,
+          phone: defaultSchool?.operatorPhone || defaultSchool?.phone || DEMO_USERS['Sekolah'].phone,
+        };
+
+        setCurrentUser(sekolahUser);
+        try {
+          await logActivity(
+            sekolahUser.email,
+            'LOGIN',
+            `Operator Sekolah (${sekolahUser.name}) berhasil masuk.`,
+            sekolahUser.name,
+            sekolahUser.role
+          );
         } catch {}
         setIsLoading(false);
         return true;

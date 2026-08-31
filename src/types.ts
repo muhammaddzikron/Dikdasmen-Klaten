@@ -66,6 +66,9 @@ export interface Sekolah {
   bannerUrl?: string;
   description?: string;
   principalName?: string;
+  username?: string; // Username login (Default: NPSN Resmi)
+  password?: string; // Kata sandi login (Default: sekolah123)
+  passwordUpdatedAt?: string;
   isDeleted?: boolean;
   createdAt?: string;
 }

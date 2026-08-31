@@ -7,6 +7,7 @@ import {
   Edit2,
   Trash2,
   Eye,
+  EyeOff,
   FileSpreadsheet,
   FileText,
   MapPin,
@@ -25,6 +26,11 @@ import {
   Share2,
   UserCheck,
   RefreshCw,
+  Lock,
+  Key,
+  Copy,
+  Check,
+  ShieldCheck,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -59,10 +65,23 @@ export const SekolahModule: React.FC = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sekolah | null>(null);
 
+  // Credential Visibility & Copy State
+  const [showPassword, setShowPassword] = useState(false);
+  const [showDetailPassword, setShowDetailPassword] = useState(false);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(label);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
+
   // Form State
   const [formData, setFormData] = useState<Partial<Sekolah>>({
     name: '',
     npsn: '',
+    username: '',
+    password: 'sekolah123',
     cabangId: '',
     rtRw: '',
     kodePos: '57411',
@@ -190,6 +209,8 @@ export const SekolahModule: React.FC = () => {
     setFormData({
       name: '',
       npsn: '',
+      username: '',
+      password: 'sekolah123',
       cabangId: defaultCabangId,
       rtRw: '01/02',
       kodePos: '57411',
@@ -221,17 +242,24 @@ export const SekolahModule: React.FC = () => {
       bannerUrl: '',
       description: '',
     });
+    setShowPassword(false);
     setIsModalOpen(true);
   };
 
   const handleOpenEditModal = (item: Sekolah) => {
     setSelectedItem(item);
-    setFormData({ ...item });
+    setFormData({
+      ...item,
+      username: item.username || item.npsn || '',
+      password: item.password || 'sekolah123',
+    });
+    setShowPassword(false);
     setIsModalOpen(true);
   };
 
   const handleOpenDetail = (item: Sekolah) => {
     setSelectedItem(item);
+    setShowDetailPassword(false);
     setIsDetailModalOpen(true);
   };
 
@@ -246,8 +274,14 @@ export const SekolahModule: React.FC = () => {
         formData.kecamatan ? `Kec. ${formData.kecamatan}, ` : ''
       }${formData.kabupaten || 'Kabupaten Klaten'} ${formData.kodePos || ''}`.trim();
 
+    const finalUsername = (formData.username || formData.npsn || '').trim();
+    const finalPassword = (formData.password || 'sekolah123').trim();
+
     const payload = {
       ...formData,
+      username: finalUsername,
+      password: finalPassword,
+      passwordUpdatedAt: new Date().toISOString(),
       address: fullAddress,
     };
 
@@ -1034,6 +1068,101 @@ export const SekolahModule: React.FC = () => {
                 </div>
               </div>
 
+              {/* Section 6: Akses & Kredensial Akun Login Sekolah */}
+              <div className="bg-gradient-to-br from-emerald-50/90 to-teal-50/60 dark:from-slate-800 dark:to-slate-800/60 p-4 rounded-xl space-y-3 border border-emerald-300/80 dark:border-slate-700 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <h4 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-600 text-white shadow-xs">
+                      <Lock className="w-4 h-4" />
+                    </div>
+                    <span>6. Kredensial & Akun Login Satuan Pendidikan</span>
+                  </h4>
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 dark:text-emerald-300 bg-white/90 dark:bg-slate-900/90 px-2.5 py-1 rounded-lg border border-emerald-200 dark:border-slate-700">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Default: NPSN & sekolah123</span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-600 dark:text-slate-400">
+                  Panel pengelolaan akun login mandiri untuk operator sekolah ini. Jika belum diubah, username default adalah <b>NPSN Resmi</b> dan kata sandi default adalah <b>sekolah123</b>.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Username Login */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1">
+                        <Key className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Username Login Sekolah</span>
+                      </label>
+                      <span className="text-[10px] text-slate-400">Default: NPSN Resmi</span>
+                    </div>
+                    <input
+                      type="text"
+                      value={formData.username !== undefined ? formData.username : formData.npsn || ''}
+                      onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                      placeholder={formData.npsn || 'Contoh: 20309653'}
+                      className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs font-semibold text-slate-900 dark:text-white"
+                    />
+                    <span className="text-[10px] text-slate-500 mt-1 block">
+                      Username untuk login ke aplikasi SIM Dikdasmen.
+                    </span>
+                  </div>
+
+                  {/* Password Login */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="font-semibold text-slate-700 dark:text-slate-300 text-xs flex items-center gap-1">
+                        <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Password / Kata Sandi Login</span>
+                      </label>
+                      <span className="text-[10px] text-emerald-600 font-bold">Default: sekolah123</span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        value={formData.password !== undefined ? formData.password : 'sekolah123'}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder="sekolah123"
+                        className="w-full pl-3 pr-10 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs font-bold text-slate-900 dark:text-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-2.5 top-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                        title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
+                      >
+                        {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                    <span className="text-[10px] text-slate-500 mt-1 block">
+                      Kata sandi akun sekolah (dapat diubah kapan saja).
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-emerald-200/60 dark:border-slate-700/60">
+                  <div className="text-[11px] text-slate-500 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>Status Kredensial: <b>Tersedia untuk Login</b></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData({
+                        ...formData,
+                        username: formData.npsn || '',
+                        password: 'sekolah123',
+                      });
+                    }}
+                    className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 hover:underline flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>Reset ke Kredensial Default (NPSN & sekolah123)</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
@@ -1178,6 +1307,93 @@ export const SekolahModule: React.FC = () => {
                         <div><b>Sosmed:</b> {selectedItem.sosmed || '-'}</div>
                         <div><b>Operator:</b> {selectedItem.operatorName || '-'} ({selectedItem.operatorPhone || '-'})</div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Panel Kredensial Akun Login Sekolah */}
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 text-white shadow-md space-y-3 border border-slate-700/80">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1.5 rounded-lg bg-emerald-500 text-white shadow-xs">
+                          <Lock className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-bold text-white">Akun & Kredensial Login Operator Sekolah</h4>
+                          <p className="text-[10px] text-slate-300">Akses resmi satuan pendidikan ke SIM Dikdasmen</p>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 w-fit">
+                        Peran: Operator Sekolah
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="bg-slate-800/90 p-3 rounded-lg border border-slate-700 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">Username Login:</span>
+                          <span className="font-mono text-xs font-bold text-emerald-400">
+                            {selectedItem.username || selectedItem.npsn}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selectedItem.username || selectedItem.npsn, 'username')}
+                          className="p-1.5 rounded-md hover:bg-slate-700 text-slate-300 transition-colors"
+                          title="Salin Username"
+                        >
+                          {copiedText === 'username' ? (
+                            <Check className="w-3.5 h-3.5 text-emerald-400" />
+                          ) : (
+                            <Copy className="w-3.5 h-3.5" />
+                          )}
+                        </button>
+                      </div>
+
+                      <div className="bg-slate-800/90 p-3 rounded-lg border border-slate-700 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 block font-medium">Password Login:</span>
+                          <span className="font-mono text-xs font-bold text-amber-300">
+                            {showDetailPassword ? selectedItem.password || 'sekolah123' : '••••••••••••'}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setShowDetailPassword(!showDetailPassword)}
+                            className="p-1.5 rounded-md hover:bg-slate-700 text-slate-300 transition-colors"
+                            title={showDetailPassword ? 'Sembunyikan' : 'Tampilkan password'}
+                          >
+                            {showDetailPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyToClipboard(selectedItem.password || 'sekolah123', 'password')}
+                            className="p-1.5 rounded-md hover:bg-slate-700 text-slate-300 transition-colors"
+                            title="Salin Password"
+                          >
+                            {copiedText === 'password' ? (
+                              <Check className="w-3.5 h-3.5 text-emerald-400" />
+                            ) : (
+                              <Copy className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300 pt-1 border-t border-slate-800">
+                      <span>Default: NPSN Resmi & password <b>sekolah123</b></span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsDetailModalOpen(false);
+                          handleOpenEditModal(selectedItem);
+                        }}
+                        className="text-emerald-400 hover:text-emerald-300 font-bold underline flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        <span>Ubah Username & Password</span>
+                      </button>
                     </div>
                   </div>
 

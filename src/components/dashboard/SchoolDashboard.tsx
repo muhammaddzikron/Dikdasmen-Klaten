@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   School,
   MapPin,
@@ -17,6 +17,16 @@ import {
   UserCheck,
   CheckCircle,
   ExternalLink,
+  Lock,
+  Key,
+  Eye,
+  EyeOff,
+  Save,
+  RefreshCw,
+  Copy,
+  Check,
+  ShieldCheck,
+  Edit2,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -39,12 +49,48 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
     setSelectedSekolahId,
     activeSekolah,
     cabangList,
+    updateSekolah,
   } = useData();
 
-  const [activeTabSub, setActiveTabSub] = useState<'ringkasan' | 'visi-misi' | 'ptk' | 'sk'>('ringkasan');
+  const [activeTabSub, setActiveTabSub] = useState<'ringkasan' | 'visi-misi' | 'ptk' | 'sk' | 'kredensial'>('ringkasan');
+  const [editUsername, setEditUsername] = useState('');
+  const [editPassword, setEditPassword] = useState('sekolah123');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSavingCreds, setIsSavingCreds] = useState(false);
+  const [copiedText, setCopiedText] = useState<string | null>(null);
 
   const validSchools = sekolahList.filter((s) => !s.isDeleted);
   const currentSchool: Sekolah | null = activeSekolah || validSchools[0] || null;
+
+  useEffect(() => {
+    if (currentSchool) {
+      setEditUsername(currentSchool.username || currentSchool.npsn || '');
+      setEditPassword(currentSchool.password || 'sekolah123');
+    }
+  }, [currentSchool?.id, currentSchool?.username, currentSchool?.password, currentSchool?.npsn]);
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedText(label);
+    setTimeout(() => setCopiedText(null), 2000);
+  };
+
+  const handleSaveCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentSchool) return;
+    setIsSavingCreds(true);
+    try {
+      const finalUsername = editUsername.trim() || currentSchool.npsn;
+      const finalPassword = editPassword.trim() || 'sekolah123';
+      await updateSekolah(currentSchool.id, {
+        username: finalUsername,
+        password: finalPassword,
+        passwordUpdatedAt: new Date().toISOString(),
+      });
+    } finally {
+      setIsSavingCreds(false);
+    }
+  };
 
   if (!currentSchool) {
     return (
@@ -178,10 +224,22 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+              <button
+                onClick={() => setActiveTabSub('kredensial')}
+                className={`w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl font-bold text-xs transition-all border ${
+                  activeTabSub === 'kredensial'
+                    ? 'bg-slate-900 text-white border-slate-900 dark:bg-white dark:text-slate-900'
+                    : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:border-emerald-500'
+                }`}
+              >
+                <Lock className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Akun & Password</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('manajemen-sk')}
-                className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
               >
                 <Plus className="w-4 h-4" />
                 <span>Pengajuan SK Sekolah</span>
@@ -265,6 +323,17 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
           }`}
         >
           Arsip Dokumen SK ({schoolSks.length})
+        </button>
+        <button
+          onClick={() => setActiveTabSub('kredensial')}
+          className={`pb-3 transition-colors border-b-2 flex items-center gap-1.5 ${
+            activeTabSub === 'kredensial'
+              ? 'border-emerald-600 text-emerald-600 dark:text-emerald-400'
+              : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+          }`}
+        >
+          <Lock className="w-3.5 h-3.5" />
+          <span>Akun & Password Login</span>
         </button>
       </div>
 
@@ -511,6 +580,168 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {activeTabSub === 'kredensial' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Lock className="w-5 h-5 text-emerald-600" />
+                <span>Pengaturan Kredensial & Akun Login Satuan Pendidikan</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Kelola username dan kata sandi login mandiri untuk operator <b>{currentSchool.name}</b>.
+              </p>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold w-fit">
+              <ShieldCheck className="w-4 h-4 text-emerald-600" />
+              <span>Default: NPSN & sekolah123</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Live Credentials Form */}
+            <div className="lg:col-span-2 space-y-4">
+              <form onSubmit={handleSaveCredentials} className="space-y-4">
+                <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 space-y-4">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider">
+                    Form Pembaruan Akun Sekolah
+                  </h4>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      Username Login Sekolah
+                    </label>
+                    <div className="relative">
+                      <Key className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <input
+                        type="text"
+                        required
+                        value={editUsername}
+                        onChange={(e) => setEditUsername(e.target.value)}
+                        placeholder={currentSchool.npsn || '20309653'}
+                        className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs font-semibold text-slate-900 dark:text-white"
+                      />
+                    </div>
+                    <span className="text-[11px] text-slate-500 mt-1 block">
+                      Username yang digunakan untuk masuk ke portal SIM. Default adalah NPSN resmi sekolah.
+                    </span>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                        Password / Kata Sandi Login
+                      </label>
+                      <span className="text-[11px] text-emerald-600 font-bold">Default: sekolah123</span>
+                    </div>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        placeholder="sekolah123"
+                        className="w-full pl-10 pr-20 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-mono text-xs font-bold text-slate-900 dark:text-white"
+                      />
+                      <div className="absolute right-2 top-2 flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                          title={showPassword ? 'Sembunyikan' : 'Tampilkan password'}
+                        >
+                          {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-slate-500 mt-1 block">
+                      Gunakan kata sandi yang aman dan mudah diingat oleh pengelola sekolah.
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditUsername(currentSchool.npsn || '');
+                        setEditPassword('sekolah123');
+                      }}
+                      className="text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 flex items-center gap-1.5"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Kembalikan ke Default (NPSN & sekolah123)</span>
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={isSavingCreds}
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center gap-2 transition-all cursor-pointer"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>{isSavingCreds ? 'Menyimpan ke Database...' : 'Simpan Perubahan Akun'}</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+
+            {/* Quick Status & Testing Card */}
+            <div className="space-y-4">
+              <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-800 text-white shadow-lg space-y-3.5 border border-slate-700">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-emerald-500 text-white">
+                      <ShieldCheck className="w-4 h-4" />
+                    </div>
+                    <h4 className="text-xs font-bold">Kredensial Aktif Saat Ini</h4>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold">
+                    Tersimpan
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-xs">
+                  <div className="p-2.5 rounded-lg bg-slate-800/90 border border-slate-700 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Username:</span>
+                      <span className="font-mono font-bold text-emerald-400">{currentSchool.username || currentSchool.npsn}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(currentSchool.username || currentSchool.npsn, 'card-username')}
+                      className="p-1 rounded hover:bg-slate-700 text-slate-300 transition-colors"
+                      title="Salin Username"
+                    >
+                      {copiedText === 'card-username' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-slate-800/90 border border-slate-700 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Password:</span>
+                      <span className="font-mono font-bold text-amber-300">{currentSchool.password || 'sekolah123'}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => copyToClipboard(currentSchool.password || 'sekolah123', 'card-password')}
+                      className="p-1 rounded hover:bg-slate-700 text-slate-300 transition-colors"
+                      title="Salin Password"
+                    >
+                      {copiedText === 'card-password' ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-slate-300 pt-2 border-t border-slate-700 leading-relaxed">
+                  Operator sekolah dapat langsung masuk dari halaman login menggunakan username atau NPSN resmi di atas.
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
