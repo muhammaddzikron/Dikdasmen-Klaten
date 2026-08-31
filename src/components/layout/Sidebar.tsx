@@ -16,6 +16,7 @@ import {
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useData } from '../../context/DataContext';
 
 interface SidebarProps {
   activeTab: string;
@@ -26,7 +27,13 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, onClose }) => {
   const { currentUser } = useAuth();
+  const { activeSekolah, cabangList } = useData();
   const role = currentUser?.role || 'Super Admin';
+
+  const activeCabangName =
+    role === 'Cabang'
+      ? cabangList.find((c) => c.id === currentUser?.cabangId)?.name || 'PCM Wilayah'
+      : null;
 
   const menuSections = [
     {
@@ -188,7 +195,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
       </nav>
 
       {/* Online Status Widget */}
-      <div className="p-3.5 bg-slate-800/50 m-3 rounded-lg border border-slate-800/80">
+      <div className="p-3 bg-slate-800/60 m-3 rounded-lg border border-slate-800">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
           <span className="text-[11px] text-slate-300 font-semibold">Sistem Online</span>
@@ -196,6 +203,16 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
         <p className="text-[10px] text-slate-400 leading-tight">
           Role: <span className="text-slate-200 font-semibold">{role}</span>
         </p>
+        {role === 'Sekolah' && activeSekolah && (
+          <p className="text-[10px] text-amber-400 font-medium truncate mt-1">
+            {activeSekolah.name}
+          </p>
+        )}
+        {role === 'Cabang' && activeCabangName && (
+          <p className="text-[10px] text-sky-400 font-medium truncate mt-1">
+            {activeCabangName}
+          </p>
+        )}
       </div>
     </div>
   );

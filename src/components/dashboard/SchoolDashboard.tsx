@@ -43,14 +43,15 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
 
   const [activeTabSub, setActiveTabSub] = useState<'ringkasan' | 'visi-misi' | 'ptk' | 'sk'>('ringkasan');
 
-  const currentSchool: Sekolah | null = activeSekolah || sekolahList[0] || null;
+  const validSchools = sekolahList.filter((s) => !s.isDeleted);
+  const currentSchool: Sekolah | null = activeSekolah || validSchools[0] || null;
 
   if (!currentSchool) {
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800">
         <School className="w-12 h-12 text-slate-400 mx-auto mb-3" />
-        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Belum ada Satuan Pendidikan terpilih</h3>
-        <p className="text-xs text-slate-500 mt-1">Silakan pilih atau tambahkan sekolah terlebih dahulu.</p>
+        <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">Belum ada Satuan Pendidikan terdaftar</h3>
+        <p className="text-xs text-slate-500 mt-1">Silakan tambahkan data sekolah terlebih dahulu melalui menu Master Data Sekolah.</p>
       </div>
     );
   }
@@ -80,30 +81,28 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
 
   return (
     <div className="space-y-6">
-      {/* School Selector Bar (if Admin / Cabang) */}
-      {currentUser?.role !== 'Sekolah' && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
-          <div className="flex items-center gap-2">
-            <School className="w-5 h-5 text-emerald-600" />
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Pilih Satuan Pendidikan:</span>
-          </div>
-          <select
-            id="school-profile-selector"
-            value={selectedSekolahId === 'ALL' ? currentSchool.id : selectedSekolahId}
-            onChange={(e) => setSelectedSekolahId(e.target.value)}
-            aria-label="Pilih Profil Sekolah"
-            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            {sekolahList
-              .filter((s) => !s.isDeleted)
-              .map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} (NPSN: {s.npsn})
-                </option>
-              ))}
-          </select>
+      {/* School Selector Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex items-center gap-2">
+          <School className="w-5 h-5 text-emerald-600 shrink-0" />
+          <span className="text-xs font-bold text-slate-700 dark:text-slate-300">
+            {currentUser?.role === 'Sekolah' ? 'Satuan Pendidikan Aktif:' : 'Pilih Satuan Pendidikan:'}
+          </span>
         </div>
-      )}
+        <select
+          id="school-profile-selector"
+          value={currentSchool.id}
+          onChange={(e) => setSelectedSekolahId(e.target.value)}
+          aria-label="Pilih Profil Sekolah"
+          className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-xl px-3 py-2 text-slate-900 dark:text-white outline-none focus:ring-2 focus:ring-emerald-500 max-w-md w-full sm:w-auto"
+        >
+          {validSchools.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name} (NPSN: {s.npsn}) - {s.level}
+            </option>
+          ))}
+        </select>
+      </div>
 
       {/* Header Banner & School Identity */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">

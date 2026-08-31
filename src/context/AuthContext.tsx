@@ -39,26 +39,24 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     phone: '081298765432',
   },
   'Cabang': {
-    id: 'usr-cabang-gondomanan-03',
-    email: 'pcm.klatenutara@dikdasmenklaten.org',
-    name: 'Operator PCM Klaten Utara',
+    id: 'usr-cabang-default',
+    email: 'pcm@dikdasmenklaten.org',
+    name: 'Operator Cabang / PCM',
     role: 'Cabang',
-    cabangId: 'cabang-gondomanan',
     createdAt: new Date().toISOString(),
     isActive: true,
     avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
-    phone: '0274-375521',
+    phone: '0272-321000',
   },
   'Sekolah': {
-    id: 'usr-operator-muhi-04',
-    email: 'operator@smamuh1yogya.sch.id',
-    name: 'Operator SMA Muhi Yogya',
+    id: 'usr-sekolah-default',
+    email: 'operator@sekolah.dikdasmenklaten.org',
+    name: 'Operator Satuan Pendidikan',
     role: 'Sekolah',
-    sekolahId: 'sch-muhi',
     createdAt: new Date().toISOString(),
     isActive: true,
     avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-    phone: '0274-513454',
+    phone: '0272-321001',
   },
 };
 
@@ -176,7 +174,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         const cabangUser: UserProfile = {
           ...DEMO_USERS['Cabang'],
-          cabangId: 'cabang-gondomanan',
         };
 
         setCurrentUser(cabangUser);
@@ -188,14 +185,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // 4. Operator Sekolah Authentication
-      if (identifier.includes('sekolah') || identifier.includes('muhi') || identifier.includes('operator')) {
+      if (identifier.includes('sekolah') || identifier.includes('operator')) {
         if (password !== 'adminn' && password !== 'admin') {
           throw new Error('Kata sandi salah. Gunakan password "adminn".');
         }
 
         const sekolahUser: UserProfile = {
           ...DEMO_USERS['Sekolah'],
-          sekolahId: 'sch-muhi',
         };
 
         setCurrentUser(sekolahUser);

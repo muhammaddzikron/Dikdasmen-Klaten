@@ -295,11 +295,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let list = sekolahList.filter((s) => !s.isDeleted);
 
     if (currentUser.role === 'Sekolah') {
-      const userSchoolId = currentUser.sekolahId || (sekolahList[0] ? sekolahList[0].id : '');
-      list = list.filter((s) => s.id === userSchoolId);
+      const targetSchoolId =
+        selectedSekolahId !== 'ALL'
+          ? selectedSekolahId
+          : currentUser.sekolahId || (list[0] ? list[0].id : '');
+      const matched = list.filter((s) => s.id === targetSchoolId);
+      list = matched.length > 0 ? matched : (list[0] ? [list[0]] : []);
     } else if (currentUser.role === 'Cabang') {
-      const userCabangId = currentUser.cabangId || (cabangList[0] ? cabangList[0].id : '');
-      list = list.filter((s) => s.cabangId === userCabangId);
+      const targetCabangId =
+        selectedCabangId !== 'ALL'
+          ? selectedCabangId
+          : currentUser.cabangId || (cabangList[0] ? cabangList[0].id : '');
+      list = list.filter((s) => s.cabangId === targetCabangId);
+      if (selectedSekolahId !== 'ALL') {
+        list = list.filter((s) => s.id === selectedSekolahId);
+      }
     } else {
       // Super Admin or Admin
       if (selectedCabangId !== 'ALL') {
@@ -374,14 +384,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Active School for Single School Profile mode
   const activeSekolah = useMemo(() => {
+    const nonDeleted = sekolahList.filter((s) => !s.isDeleted);
+    if (nonDeleted.length === 0) return null;
+
     if (currentUser?.role === 'Sekolah') {
-      const userSchoolId = currentUser.sekolahId || (sekolahList[0] ? sekolahList[0].id : '');
-      return sekolahList.find((s) => s.id === userSchoolId) || sekolahList[0] || null;
+      if (selectedSekolahId !== 'ALL') {
+        const found = nonDeleted.find((s) => s.id === selectedSekolahId);
+        if (found) return found;
+      }
+      const userSchoolId = currentUser.sekolahId;
+      if (userSchoolId) {
+        const found = nonDeleted.find((s) => s.id === userSchoolId);
+        if (found) return found;
+      }
+      return nonDeleted[0] || null;
     }
+
     if (selectedSekolahId !== 'ALL') {
-      return sekolahList.find((s) => s.id === selectedSekolahId) || null;
+      return nonDeleted.find((s) => s.id === selectedSekolahId) || nonDeleted[0] || null;
     }
-    return filteredSekolahList[0] || null;
+
+    return filteredSekolahList[0] || nonDeleted[0] || null;
   }, [currentUser, sekolahList, selectedSekolahId, filteredSekolahList]);
 
   // Operations: Sekolah
