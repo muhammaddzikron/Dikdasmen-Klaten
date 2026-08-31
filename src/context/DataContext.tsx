@@ -88,6 +88,7 @@ interface DataContextType {
   updateCabang: (id: string, data: Partial<Cabang>) => Promise<void>;
   deleteCabang: (id: string, isPermanent?: boolean) => Promise<void>;
   restoreCabang: (id: string) => Promise<void>;
+  importCabangBatch: (items: Omit<Cabang, 'id'>[]) => Promise<number>;
 
   addGuru: (data: Omit<Guru, 'id'>) => Promise<string>;
   updateGuru: (id: string, data: Partial<Guru>) => Promise<void>;
@@ -473,6 +474,20 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Data Cabang berhasil dipulihkan!', 'success');
   };
 
+  const importCabangBatch = async (items: Omit<Cabang, 'id'>[]): Promise<number> => {
+    if (!items || items.length === 0) return 0;
+    const ids = await batchAddRecords('cabang', items);
+    await logActivity(
+      currentUser?.email || 'System',
+      'IMPORT_EXCEL_CABANG',
+      `Import massal ${ids.length} data Cabang/PCM via Excel/CSV`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Berhasil mengimpor ${ids.length} data Cabang (PCM)!`, 'success');
+    return ids.length;
+  };
+
   // Operations: Guru
   const addGuru = async (data: Omit<Guru, 'id'>) => {
     const id = await addRecord('guru', { ...data, isDeleted: false });
@@ -795,6 +810,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateCabang,
         deleteCabang,
         restoreCabang,
+        importCabangBatch,
         addGuru,
         updateGuru,
         deleteGuru,

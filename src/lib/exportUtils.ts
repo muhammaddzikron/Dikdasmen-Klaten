@@ -36,12 +36,25 @@ export function exportToCSV(filename: string, rows: Record<string, any>[]) {
 }
 
 /**
- * Export tabular data directly to Microsoft Excel XLSX format
+ * Export tabular data directly to Microsoft Excel XLSX format with automatic column width formatting
  */
 export function exportToExcel(filename: string, sheetName: string, rows: Record<string, any>[]) {
   if (!rows || !rows.length) return;
 
   const worksheet = XLSX.utils.json_to_sheet(rows);
+
+  // Auto calculate column widths for clean readability
+  const keys = Object.keys(rows[0]);
+  const colWidths = keys.map((key) => {
+    let maxLen = key.length;
+    for (const r of rows) {
+      const valStr = r[key] !== null && r[key] !== undefined ? String(r[key]) : '';
+      if (valStr.length > maxLen) maxLen = valStr.length;
+    }
+    return { wch: Math.min(Math.max(maxLen + 4, 12), 65) };
+  });
+  worksheet['!cols'] = colWidths;
+
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, sheetName || 'Data');
   XLSX.writeFile(workbook, `${filename}.xlsx`);
