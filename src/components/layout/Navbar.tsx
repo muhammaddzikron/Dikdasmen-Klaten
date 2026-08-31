@@ -14,6 +14,7 @@ import {
   CheckCheck,
   Sparkles,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
@@ -151,15 +152,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           </button>
         )}
 
-        <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 w-52 sm:w-72 md:w-80">
+        <div className="relative flex items-center bg-slate-100 dark:bg-slate-800 rounded-lg px-3 py-1.5 w-52 sm:w-72 md:w-80">
           <Search className="w-4 h-4 text-slate-400 flex-shrink-0" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Cari NPSN, Guru, Siswa..."
-            className="bg-transparent border-none text-xs focus:outline-hidden ml-2 w-full text-slate-700 dark:text-slate-300 placeholder:text-slate-400"
+            className="bg-transparent border-none text-xs focus:outline-hidden ml-2 w-full pr-5 text-slate-700 dark:text-slate-300 placeholder:text-slate-400"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title="Bersihkan pencarian"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

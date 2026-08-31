@@ -20,7 +20,7 @@ export const LoginView: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeLoginType, setActiveLoginType] = useState<'sekolah' | 'cabang' | 'admin'>('sekolah');
+  const [activeLoginType, setActiveLoginType] = useState<'sekolah' | 'cabang' | 'admin'>('cabang');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +64,7 @@ export const LoginView: React.FC = () => {
             SIM DIKDASMEN
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 max-w-xs sm:max-w-sm mx-auto font-medium leading-relaxed">
-            Sistem Informasi Manajemen Pendidikan Dasar dan Menengah Pimpinan Daerah Muhammadiyah
+            Sistem Informasi Manajemen Majelis Dikdasmen & PNF PDM Klaten
           </p>
         </div>
 
@@ -205,7 +205,7 @@ export const LoginView: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center text-xs text-slate-500 font-medium">
-          © {new Date().getFullYear()} Majelis Dikdasmen & PNF. Cloud Firestore Database Terenkripsi.
+          © 2026 Majelis Dikdasmen & PNF PDM Klaten
         </div>
       </div>
     </div>

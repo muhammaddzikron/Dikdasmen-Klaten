@@ -30,6 +30,7 @@ import {
   createNotification,
   seedInitialData,
   syncMasterSekolahKlaten,
+  syncMasterCabangKlaten,
   getStaticFallbackData,
 } from '../lib/firestoreService';
 import { useAuth } from './AuthContext';
@@ -146,6 +147,7 @@ interface DataContextType {
   markNotifAsRead: (id: string) => Promise<void>;
   seedDatabase: () => Promise<void>;
   syncMasterSekolah: () => Promise<void>;
+  syncMasterCabang: () => Promise<void>;
 
   // Toasts
   toasts: ToastMessage[];
@@ -924,6 +926,17 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const syncMasterCabang = async () => {
+    setIsLoading(true);
+    const res = await syncMasterCabangKlaten();
+    setIsLoading(false);
+    if (res.success) {
+      showToast(res.message, 'success');
+    } else {
+      showToast(res.message, 'error');
+    }
+  };
+
   return (
     <DataContext.Provider
       value={{
@@ -1005,6 +1018,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         markNotifAsRead,
         seedDatabase,
         syncMasterSekolah,
+        syncMasterCabang,
         isQuotaExceeded,
         toasts,
         showToast,

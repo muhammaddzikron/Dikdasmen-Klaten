@@ -21,6 +21,13 @@ import {
   Sparkles,
   Key,
   ShieldCheck,
+  Copy,
+  LogIn,
+  Eye,
+  EyeOff,
+  RefreshCw,
+  LayoutGrid,
+  Table as TableIcon,
 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { useData } from '../../context/DataContext';
@@ -42,13 +49,26 @@ interface ParsedCabang {
 }
 
 export const CabangModule: React.FC = () => {
-  const { cabangList, sekolahList, addCabang, updateCabang, deleteCabang, importCabangBatch, showToast } = useData();
-  const { currentUser } = useAuth();
+  const {
+    cabangList,
+    sekolahList,
+    addCabang,
+    updateCabang,
+    deleteCabang,
+    importCabangBatch,
+    syncMasterCabang,
+    showToast,
+  } = useData();
+  const { currentUser, quickLogin } = useAuth();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+  const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Cabang | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   // Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -75,8 +95,37 @@ export const CabangModule: React.FC = () => {
       c.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (c.username && c.username.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (c.ketuaName && c.ketuaName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (c.ketuaName && c.ketuaName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (c.address && c.address.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const togglePasswordVisibility = (id: string) => {
+    setShowPasswords((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handleCopyCredentials = (c: Cabang) => {
+    const text = `Username: ${c.username || c.code}\nPassword: ${c.password || 'cabang123'}`;
+    navigator.clipboard.writeText(text);
+    setCopiedId(c.id);
+    showToast(`Kredensial untuk ${c.name} disalin ke clipboard!`, 'info');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const handleTestSession = (c: Cabang) => {
+    quickLogin('Cabang', `Operator ${c.name}`, c.id);
+    showToast(`Beralih ke Sesi ${c.name}`, 'success');
+  };
+
+  const handleSyncCabang = async () => {
+    try {
+      setIsSyncing(true);
+      await syncMasterCabang();
+    } catch (err: any) {
+      showToast(err?.message || 'Gagal sinkron data cabang', 'error');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const handleOpenAdd = () => {
     setSelectedItem(null);
@@ -409,6 +458,20 @@ export const CabangModule: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Sinkronkan Master PCM Klaten */}
+          {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+            <button
+              type="button"
+              onClick={handleSyncCabang}
+              disabled={isSyncing}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-60"
+              title="Sinkronkan 26 Data Master PCM Klaten lengkap (23 PCM tambahan + Cabang Daerah Kota)"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+              <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan 26 PCM Klaten'}</span>
+            </button>
+          )}
+
           {/* Ekspor Excel */}
           <button
             type="button"
@@ -463,102 +526,312 @@ export const CabangModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Search & Grid Cards */}
-      <div className="relative max-w-md">
-        <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Cari cabang / ketua / kode..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full pl-9 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
-        />
-      </div>
-
-      {/* Cabang Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((cabang) => {
-          const underSchools = sekolahList.filter((s) => s.cabangId === cabang.id && !s.isDeleted);
-
-          return (
-            <div
-              key={cabang.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 hover:border-emerald-500/50 transition-colors"
+      {/* Filter & View Switcher Bar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="relative w-full sm:max-w-md">
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Cari nama PCM, ketua, kode, alamat, username..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-9 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              title="Bersihkan pencarian"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-sky-600 dark:text-sky-400">
-                    <Building className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">{cabang.name}</h3>
-                    <span className="font-mono text-[11px] font-semibold text-slate-400">{cabang.code}</span>
-                  </div>
-                </div>
-                {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenEdit(cabang)}
-                      className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
-                      title="Edit Data Cabang"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(cabang.id, cabang.name)}
-                      className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
-                      title="Hapus Cabang"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-              </div>
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
 
-              <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <User className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">
-                    Ketua: <strong className="text-slate-800 dark:text-slate-200">{cabang.ketuaName || '-'}</strong>
-                  </span>
-                </div>
-                {cabang.phone && (
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{cabang.phone}</span>
-                  </div>
-                )}
-                {cabang.email && (
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{cabang.email}</span>
-                  </div>
-                )}
-                {cabang.address && (
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{cabang.address}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-[11px] pt-1 bg-slate-50 dark:bg-slate-800/40 px-2.5 py-1.5 rounded-lg">
-                  <span className="text-slate-400">Username Login:</span>
-                  <span className="font-mono font-semibold text-sky-600 dark:text-sky-400">{cabang.username || cabang.code}</span>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between text-xs">
-                <span className="text-slate-500 flex items-center gap-1.5">
-                  <School className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>Satuan Pendidikan:</span>
-                </span>
-                <span className="font-bold text-slate-900 dark:text-white">{underSchools.length} Sekolah</span>
-              </div>
-            </div>
-          );
-        })}
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <div className="flex items-center p-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xs text-xs">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                viewMode === 'grid'
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Tampilan Grid Kartu"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline text-[11px]">Grid</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('table')}
+              className={`p-1.5 rounded-lg transition-all flex items-center gap-1 cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 font-bold'
+                  : 'text-slate-500 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+              title="Tampilan Tabel Data"
+            >
+              <TableIcon className="w-4 h-4" />
+              <span className="hidden sm:inline text-[11px]">Tabel</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* Cabang View (Grid or Table) */}
+      {viewMode === 'grid' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filtered.map((cabang) => {
+            const underSchools = sekolahList.filter((s) => s.cabangId === cabang.id && !s.isDeleted);
+            const isPwVisible = !!showPasswords[cabang.id];
+
+            return (
+              <div
+                key={cabang.id}
+                className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4 hover:border-emerald-500/50 transition-colors flex flex-col justify-between"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                        <Building className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-sm">{cabang.name}</h3>
+                        <span className="font-mono text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          {cabang.code}
+                        </span>
+                      </div>
+                    </div>
+                    {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEdit(cabang)}
+                          className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 transition-colors cursor-pointer"
+                          title="Edit Data Cabang"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(cabang.id, cabang.name)}
+                          className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                          title="Hapus Cabang"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex items-start gap-2">
+                      <User className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="text-[11px] text-slate-400 block">Ketua PCM:</span>
+                        <strong className="text-slate-800 dark:text-slate-200 text-xs">{cabang.ketuaName || '-'}</strong>
+                      </div>
+                    </div>
+                    {cabang.phone && (
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{cabang.phone}</span>
+                      </div>
+                    )}
+                    {cabang.email && (
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate text-sky-600 dark:text-sky-400">{cabang.email}</span>
+                      </div>
+                    )}
+                    {cabang.address && (
+                      <div className="flex items-start gap-2">
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
+                        <span className="text-[11px] leading-tight text-slate-600 dark:text-slate-400">{cabang.address}</span>
+                      </div>
+                    )}
+
+                    {/* Kredensial Box */}
+                    <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-400 font-medium flex items-center gap-1">
+                          <Key className="w-3 h-3 text-amber-500" />
+                          <span>Kredensial Login:</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyCredentials(cabang)}
+                          className="flex items-center gap-1 text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold cursor-pointer"
+                          title="Salin username dan password"
+                        >
+                          {copiedId === cabang.id ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                          <span>{copiedId === cabang.id ? 'Tersalin' : 'Salin'}</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">User:</span>
+                        <code className="font-mono font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.5 rounded">
+                          {cabang.username || cabang.code}
+                        </code>
+                      </div>
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-slate-500">Pass:</span>
+                        <div className="flex items-center gap-1">
+                          <code className="font-mono font-bold text-slate-700 dark:text-slate-200 bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded">
+                            {isPwVisible ? (cabang.password || 'cabang123') : '••••••••'}
+                          </code>
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(cabang.id)}
+                            className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                            title={isPwVisible ? 'Sembunyikan password' : 'Lihat password'}
+                          >
+                            {isPwVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Card */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-slate-500 flex items-center gap-1.5 text-[11px]">
+                      <School className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Satuan Pendidikan:</span>
+                    </span>
+                    <span className="font-bold text-slate-900 dark:text-white text-xs">{underSchools.length} Sekolah</span>
+                  </div>
+
+                  {/* Sesi Test Switcher Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleTestSession(cabang)}
+                    className="w-full py-2 px-3 rounded-xl bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm shadow-teal-500/20 transition-all cursor-pointer active:scale-[0.98]"
+                    title={`Masuk dan uji coba sesi operator ${cabang.name}`}
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>Masuk Sesi {cabang.name.replace('PCM ', '')}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        /* Table View */
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider">
+                  <th className="py-3 px-4">No</th>
+                  <th className="py-3 px-4">Kode</th>
+                  <th className="py-3 px-4">Nama PCM</th>
+                  <th className="py-3 px-4">Ketua & Gelar</th>
+                  <th className="py-3 px-4">Kontak (Telp / Email)</th>
+                  <th className="py-3 px-4">Alamat Kantor</th>
+                  <th className="py-3 px-4">Kredensial Login</th>
+                  <th className="py-3 px-4">Jml Sekolah</th>
+                  <th className="py-3 px-4 text-center">Aksi / Sesi</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {filtered.map((cabang, idx) => {
+                  const underSchools = sekolahList.filter((s) => s.cabangId === cabang.id && !s.isDeleted);
+                  const isPwVisible = !!showPasswords[cabang.id];
+
+                  return (
+                    <tr key={cabang.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-slate-400">{idx + 1}</td>
+                      <td className="py-3 px-4 font-mono font-bold text-emerald-600 dark:text-emerald-400">{cabang.code}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900 dark:text-white">{cabang.name}</td>
+                      <td className="py-3 px-4 font-semibold text-slate-800 dark:text-slate-200">{cabang.ketuaName || '-'}</td>
+                      <td className="py-3 px-4">
+                        <div className="space-y-0.5">
+                          <div className="text-slate-700 dark:text-slate-300">{cabang.phone || '-'}</div>
+                          <div className="text-[11px] text-sky-600 dark:text-sky-400">{cabang.email || '-'}</div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 max-w-xs truncate text-slate-600 dark:text-slate-400" title={cabang.address}>
+                        {cabang.address || '-'}
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-1 font-mono text-[11px]">
+                            <span className="text-slate-400">U:</span>
+                            <span className="font-bold text-sky-600 dark:text-sky-400">{cabang.username || cabang.code}</span>
+                          </div>
+                          <div className="flex items-center gap-1 font-mono text-[11px]">
+                            <span className="text-slate-400">P:</span>
+                            <span className="font-bold text-slate-700 dark:text-slate-200">
+                              {isPwVisible ? (cabang.password || 'cabang123') : '••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(cabang.id)}
+                              className="text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                            >
+                              {isPwVisible ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyCredentials(cabang)}
+                              className="text-slate-400 hover:text-emerald-600 p-0.5 cursor-pointer"
+                              title="Salin Kredensial"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{underSchools.length}</td>
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleTestSession(cabang)}
+                            className="px-2.5 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-300 font-bold text-[11px] flex items-center gap-1 transition-all cursor-pointer"
+                            title={`Masuk sesi ${cabang.name}`}
+                          >
+                            <LogIn className="w-3 h-3" />
+                            <span>Sesi</span>
+                          </button>
+                          {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEdit(cabang)}
+                                className="p-1 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                                title="Edit"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDelete(cabang.id, cabang.name)}
+                                className="p-1 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                                title="Hapus"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Modal Add/Edit */}
       {isModalOpen && (

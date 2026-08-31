@@ -46,13 +46,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
           label: 'Dashboard Overview',
           icon: LayoutDashboard,
         },
-        ...(role === 'Super Admin'
+        ...(role === 'Super Admin' || role === 'Admin'
           ? [
               {
                 id: 'cabang',
                 label: 'Cabang / PCM',
                 icon: Building,
               },
+              {
+                id: 'sekolah',
+                label: 'Data Sekolah & Madrasah',
+                icon: School,
+              },
+            ]
+          : role === 'Cabang'
+          ? [
               {
                 id: 'sekolah',
                 label: 'Data Sekolah & Madrasah',

@@ -123,8 +123,12 @@ export const SekolahModule: React.FC = () => {
   });
 
   const activeSchools = useMemo(() => {
-    return filteredSekolahList.filter((s) => !s.isDeleted);
-  }, [filteredSekolahList]);
+    let list = filteredSekolahList.filter((s) => !s.isDeleted);
+    if (currentUser?.role === 'Cabang' && currentUser.cabangId) {
+      list = list.filter((s) => s.cabangId === currentUser.cabangId);
+    }
+    return list;
+  }, [filteredSekolahList, currentUser]);
 
   // Helper for computing live automatic recap for any school
   const getSchoolRecap = (schoolId: string) => {
@@ -282,11 +286,17 @@ export const SekolahModule: React.FC = () => {
         formData.kecamatan ? `Kec. ${formData.kecamatan}, ` : ''
       }${formData.kabupaten || 'Kabupaten Klaten'} ${formData.kodePos || ''}`.trim();
 
+    const assignedCabangId =
+      currentUser?.role === 'Cabang' && currentUser.cabangId
+        ? currentUser.cabangId
+        : formData.cabangId || cabangList.find((c) => !c.isDeleted)?.id || '';
+
     const finalUsername = (formData.username || formData.npsn || '').trim();
     const finalPassword = (formData.password || 'sekolah123').trim();
 
     const payload = {
       ...formData,
+      cabangId: assignedCabangId,
       username: finalUsername,
       password: finalPassword,
       passwordUpdatedAt: new Date().toISOString(),
@@ -467,32 +477,49 @@ export const SekolahModule: React.FC = () => {
       <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         {/* Search */}
         <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Cari nama, NPSN, kecamatan..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
+            className="w-full pl-9 pr-9 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs outline-none focus:ring-2 focus:ring-emerald-500"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title="Bersihkan pencarian"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Filter Cabang */}
-        <select
-          value={filterCabang}
-          onChange={(e) => setFilterCabang(e.target.value)}
-          aria-label="Filter Cabang"
-          className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium rounded-xl px-3 py-2 outline-none"
-        >
-          <option value="ALL">Semua Cabang / PCM</option>
-          {cabangList
-            .filter((c) => !c.isDeleted)
-            .map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-        </select>
+        {currentUser?.role === 'Cabang' ? (
+          <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold rounded-xl px-3 py-2 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+            <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+            <span className="truncate">Wilayah: {cabangList.find((c) => c.id === currentUser.cabangId)?.name || 'Cabang Anda'}</span>
+          </div>
+        ) : (
+          <select
+            value={filterCabang}
+            onChange={(e) => setFilterCabang(e.target.value)}
+            aria-label="Filter Cabang"
+            className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium rounded-xl px-3 py-2 outline-none"
+          >
+            <option value="ALL">Semua Cabang / PCM</option>
+            {cabangList
+              .filter((c) => !c.isDeleted)
+              .map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+          </select>
+        )}
 
         {/* Filter Jenjang */}
         <select
@@ -701,10 +728,21 @@ export const SekolahModule: React.FC = () => {
                       type="text"
                       required
                       value={formData.npsn || ''}
-                      onChange={(e) => setFormData({ ...formData, npsn: e.target.value })}
+                      onChange={(e) => {
+                        const newNpsn = e.target.value;
+                        const shouldUpdateUsername = !formData.username || formData.username === formData.npsn;
+                        setFormData({
+                          ...formData,
+                          npsn: newNpsn,
+                          username: shouldUpdateUsername ? newNpsn : formData.username,
+                        });
+                      }}
                       placeholder="Contoh: 20309876"
                       className="w-full px-3 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500 font-mono"
                     />
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1 block">
+                      NPSN otomatis dijadikan username akun login sekolah.
+                    </span>
                   </div>
 
                   <div>

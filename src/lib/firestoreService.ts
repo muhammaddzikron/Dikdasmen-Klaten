@@ -32,6 +32,7 @@ import {
   SystemSetting,
   DEFAULT_SCHOOL_LOGO,
 } from '../types';
+import { MASTER_CABANG_KLATEN, getMasterCabangList } from '../data/masterCabangKlaten';
 
 // Generic CRUD functions
 export async function addRecord<T extends object>(collectionName: string, data: T): Promise<string> {
@@ -174,73 +175,118 @@ export async function createNotification(notif: Omit<NotificationItem, 'id' | 'c
   }
 }
 
+// Sync or push all 26 Klaten Cabang / PCM master data to Firestore
+export async function syncMasterCabangKlaten(): Promise<{ success: boolean; message: string; count: number }> {
+  try {
+    const existingSnap = await getDocs(collection(db, 'cabang'));
+    const existingMap = new Map<string, any>();
+    existingSnap.docs.forEach((d) => {
+      const data = d.data();
+      const nameKey = (data.name || '').toLowerCase().trim();
+      const codeKey = (data.code || '').toLowerCase().trim();
+      const usernameKey = (data.username || '').toLowerCase().trim();
+      existingMap.set(d.id, d);
+      if (nameKey) existingMap.set(nameKey, d);
+      if (codeKey) existingMap.set(codeKey, d);
+      if (usernameKey) existingMap.set(usernameKey, d);
+    });
+
+    let addedCount = 0;
+    let updatedCount = 0;
+
+    for (const c of MASTER_CABANG_KLATEN) {
+      const nameKey = (c.name || '').toLowerCase().trim();
+      const codeKey = (c.code || '').toLowerCase().trim();
+      const usernameKey = (c.username || '').toLowerCase().trim();
+      const matchedDoc = (c.id && existingMap.get(c.id)) || existingMap.get(nameKey) || existingMap.get(codeKey) || (usernameKey && existingMap.get(usernameKey));
+
+      if (matchedDoc) {
+        // Update existing document if needed (ensure credentials and fields exist)
+        const docRef = doc(db, 'cabang', matchedDoc.id);
+        await updateDoc(docRef, {
+          username: c.username,
+          password: c.password,
+          ketuaName: c.ketuaName,
+          phone: c.phone,
+          email: c.email,
+          address: c.address,
+          name: c.name,
+          code: c.code,
+          isDeleted: false,
+        });
+        updatedCount++;
+      } else {
+        // Add new document
+        const targetId = c.id || `cabang-${c.username}`;
+        const docRef = doc(db, 'cabang', targetId);
+        await setDoc(docRef, {
+          name: c.name,
+          code: c.code,
+          username: c.username,
+          password: c.password,
+          address: c.address,
+          phone: c.phone,
+          email: c.email,
+          ketuaName: c.ketuaName,
+          createdAt: new Date().toISOString(),
+          isDeleted: false,
+        });
+        addedCount++;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Berhasil menyinkronkan Data Master Cabang (PCM): ${addedCount} ditambahkan, ${updatedCount} diperbarui. Total 26 PCM aktif.`,
+      count: addedCount + updatedCount,
+    };
+  } catch (err: any) {
+    console.error('Error syncing master cabang:', err);
+    return { success: false, message: err?.message || 'Gagal sinkron master cabang', count: 0 };
+  }
+}
+
 // Seed Initial Comprehensive Demo Master Data
 export async function seedInitialData(forceReload: boolean = false): Promise<boolean> {
   try {
-    // 1. Cabang (PCM) - Klaten Kota as primary
-    const cabangData: Omit<Cabang, 'id'>[] = [
-      {
-        name: 'PCM Klaten Kota',
-        code: 'PCM-KLT-01',
-        username: 'pcm_klatenkota',
-        address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten',
-        phone: '0272-321528',
-        email: 'pcm.klatenkota@dikdasmenklaten.org',
-        ketuaName: 'Drs. H. Sukirman, M.Pd.',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'PCM Klaten Utara',
-        code: 'PCM-KLU-02',
-        username: 'pcm_klatenutara',
-        address: 'Jl. Ki Ageng Pengging, Gergunung, Klaten Utara, Kab. Klaten',
-        phone: '0272-322890',
-        email: 'pcm.klatenutara@dikdasmenklaten.org',
-        ketuaName: 'Dr. H. Muhammad Arifin, M.Ag.',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'PCM Klaten Selatan',
-        code: 'PCM-KLS-03',
-        username: 'pcm_klatenselatan',
-        address: 'Jl. Merbabu No. 18, Gayamprit, Klaten Selatan, Kab. Klaten',
-        phone: '0272-322419',
-        email: 'pcm.klatenselatan@dikdasmenklaten.org',
-        ketuaName: 'H. Budi Santoso, S.Pd.',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'PCM Delanggu',
-        code: 'PCM-DLG-04',
-        username: 'pcm_delanggu',
-        address: 'Jl. Raya Jogja-Solo KM 22, Delanggu, Kab. Klaten',
-        phone: '0272-551201',
-        email: 'pcm.delanggu@dikdasmenklaten.org',
-        ketuaName: 'Drs. KH. Ahmad Ridwan, M.Si.',
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'PCM Pedan',
-        code: 'PCM-PDN-05',
-        username: 'pcm_pedan',
-        address: 'Jl. Pemuda No. 45, Pedan, Kab. Klaten',
-        phone: '0272-897123',
-        email: 'pcm.pedan@dikdasmenklaten.org',
-        ketuaName: 'H. Sutrisno, M.Pd.',
-        createdAt: new Date().toISOString(),
-      },
-    ];
+    // 1. Cabang (PCM) - Using complete 26 PCM data (23 new + 3 existing Kota)
+    const cabangData: Omit<Cabang, 'id'>[] = MASTER_CABANG_KLATEN.map((c) => ({
+      name: c.name,
+      code: c.code,
+      username: c.username,
+      password: c.password,
+      address: c.address,
+      phone: c.phone,
+      email: c.email,
+      ketuaName: c.ketuaName,
+      createdAt: new Date().toISOString(),
+      isDeleted: false,
+    }));
 
     // Check if cabang already exists in DB before adding
     const existingCabangSnap = await getDocs(collection(db, 'cabang'));
     const cabangIds: string[] = [];
     if (existingCabangSnap.docs.length > 0) {
       existingCabangSnap.docs.forEach((doc) => cabangIds.push(doc.id));
+      // Also ensure any missing PCM is inserted
+      await syncMasterCabangKlaten();
     } else {
-      for (const c of cabangData) {
-        const col = collection(db, 'cabang');
-        const d = await addDoc(col, c);
-        cabangIds.push(d.id);
+      for (const c of MASTER_CABANG_KLATEN) {
+        const targetId = c.id || `cabang-${c.username}`;
+        const docRef = doc(db, 'cabang', targetId);
+        await setDoc(docRef, {
+          name: c.name,
+          code: c.code,
+          username: c.username,
+          password: c.password,
+          address: c.address,
+          phone: c.phone,
+          email: c.email,
+          ketuaName: c.ketuaName,
+          createdAt: new Date().toISOString(),
+          isDeleted: false,
+        });
+        cabangIds.push(targetId);
       }
     }
 
@@ -1146,63 +1192,7 @@ export async function syncMasterSekolahKlaten(): Promise<{ success: boolean; mes
 }
 
 export function getStaticFallbackData() {
-  const cabangList: Cabang[] = [
-    {
-      id: 'cabang-klaten-kota',
-      name: 'PCM Klaten Kota',
-      code: 'PCM-KLT-01',
-      username: 'pcm_klatenkota',
-      address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten',
-      phone: '0272-321528',
-      email: 'pcm.klatenkota@dikdasmenklaten.org',
-      ketuaName: 'Drs. H. Sukirman, M.Pd.',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'cabang-klaten-utara',
-      name: 'PCM Klaten Utara',
-      code: 'PCM-KLU-02',
-      username: 'pcm_klatenutara',
-      address: 'Jl. Ki Ageng Pengging, Gergunung, Klaten Utara, Kab. Klaten',
-      phone: '0272-322890',
-      email: 'pcm.klatenutara@dikdasmenklaten.org',
-      ketuaName: 'Dr. H. Muhammad Arifin, M.Ag.',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'cabang-klaten-selatan',
-      name: 'PCM Klaten Selatan',
-      code: 'PCM-KLS-03',
-      username: 'pcm_klatenselatan',
-      address: 'Jl. Merbabu No. 18, Gayamprit, Klaten Selatan, Kab. Klaten',
-      phone: '0272-322419',
-      email: 'pcm.klatenselatan@dikdasmenklaten.org',
-      ketuaName: 'H. Budi Santoso, S.Pd.',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'cabang-delanggu',
-      name: 'PCM Delanggu',
-      code: 'PCM-DLG-04',
-      username: 'pcm_delanggu',
-      address: 'Jl. Raya Jogja-Solo KM 22, Delanggu, Kab. Klaten',
-      phone: '0272-551201',
-      email: 'pcm.delanggu@dikdasmenklaten.org',
-      ketuaName: 'Drs. KH. Ahmad Ridwan, M.Si.',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'cabang-pedan',
-      name: 'PCM Pedan',
-      code: 'PCM-PDN-05',
-      username: 'pcm_pedan',
-      address: 'Jl. Pemuda No. 45, Pedan, Kab. Klaten',
-      phone: '0272-897123',
-      email: 'pcm.pedan@dikdasmenklaten.org',
-      ketuaName: 'H. Sutrisno, M.Pd.',
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-  ];
+  const cabangList: Cabang[] = getMasterCabangList();
 
   const sekolahList: Sekolah[] = [
     {
