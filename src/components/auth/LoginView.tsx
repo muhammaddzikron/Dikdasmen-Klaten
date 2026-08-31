@@ -8,16 +8,25 @@ import {
   Info,
   School,
   Key,
+  Eye,
+  EyeOff,
+  ChevronDown,
+  Building,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getStaticFallbackData } from '../../lib/firestoreService';
 
 export const LoginView: React.FC = () => {
   const { login, loading } = useAuth();
   const [username, setUsername] = useState('admin');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeLoginType, setActiveLoginType] = useState<'admin' | 'sekolah'>('admin');
+  const [showSchoolDropdown, setShowSchoolDropdown] = useState(false);
+
+  const fallbackSchools = getStaticFallbackData().sekolahList;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +46,7 @@ export const LoginView: React.FC = () => {
     setPassword(p);
     setActiveLoginType(type);
     setError(null);
+    setShowSchoolDropdown(false);
   };
 
   return (
@@ -62,7 +72,7 @@ export const LoginView: React.FC = () => {
           <div className="border-b border-slate-800 pb-3 flex items-center justify-between">
             <div>
               <h2 className="text-base font-bold text-white">Masuk ke Portal SIM</h2>
-              <p className="text-xs text-slate-400">Masuk sebagai Admin atau Operator Sekolah</p>
+              <p className="text-xs text-slate-400">Pilih akses Administrator atau Satuan Pendidikan</p>
             </div>
             <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <ShieldCheck className="w-5 h-5" />
@@ -74,7 +84,7 @@ export const LoginView: React.FC = () => {
             <button
               type="button"
               onClick={() => setSampleLogin('admin', 'adminn', 'admin')}
-              className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 activeLoginType === 'admin'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -85,8 +95,8 @@ export const LoginView: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => setSampleLogin('20309653', 'sekolah123', 'sekolah')}
-              className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all ${
+              onClick={() => setSampleLogin('20363271', 'sekolah123', 'sekolah')}
+              className={`py-2 px-3 rounded-lg font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                 activeLoginType === 'sekolah'
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
@@ -98,16 +108,54 @@ export const LoginView: React.FC = () => {
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs">
-              {error}
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-rose-400 mt-1.5 shrink-0" />
+              <div className="leading-relaxed">{error}</div>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4 text-xs">
             <div>
-              <label className="font-semibold text-slate-300 block mb-1.5">
-                {activeLoginType === 'sekolah' ? 'Username / NPSN Resmi Sekolah' : 'Username / Pengguna'}
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="font-semibold text-slate-300 block">
+                  {activeLoginType === 'sekolah' ? 'NPSN / Username Resmi Sekolah' : 'Username / Pengguna'}
+                </label>
+                {activeLoginType === 'sekolah' && (
+                  <button
+                    type="button"
+                    onClick={() => setShowSchoolDropdown(!showSchoolDropdown)}
+                    className="text-[11px] text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Pilih Sekolah</span>
+                    <ChevronDown className={`w-3 h-3 transition-transform ${showSchoolDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                )}
+              </div>
+
+              {/* Quick School List Dropdown */}
+              {activeLoginType === 'sekolah' && showSchoolDropdown && (
+                <div className="mb-2.5 p-2 rounded-xl bg-slate-800 border border-slate-700 max-h-48 overflow-y-auto space-y-1 shadow-lg">
+                  <div className="text-[10px] uppercase font-bold text-slate-400 px-2 py-1">
+                    Daftar NPSN Sekolah Resmi Klaten:
+                  </div>
+                  {fallbackSchools.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => setSampleLogin(s.npsn || '', 'sekolah123', 'sekolah')}
+                      className="w-full text-left px-2.5 py-1.5 rounded-lg hover:bg-slate-700/80 text-[11px] flex items-center justify-between group cursor-pointer transition-colors"
+                    >
+                      <span className="font-medium text-slate-200 truncate group-hover:text-emerald-300">
+                        {s.name}
+                      </span>
+                      <span className="font-mono text-[10px] text-emerald-400 bg-slate-900/80 px-1.5 py-0.5 rounded border border-slate-700 ml-2 shrink-0">
+                        {s.npsn}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="relative">
                 {activeLoginType === 'sekolah' ? (
                   <Key className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
@@ -119,24 +167,32 @@ export const LoginView: React.FC = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder={activeLoginType === 'sekolah' ? 'Masukkan NPSN Sekolah (Contoh: 20309653)' : 'admin'}
+                  placeholder={activeLoginType === 'sekolah' ? 'Contoh: 20363271 atau 20309653' : 'admin'}
                   className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-500 font-mono"
                 />
               </div>
             </div>
 
             <div>
-              <label className="font-semibold text-slate-300 block mb-1.5">Kata Sandi</label>
+              <label className="font-semibold text-slate-300 block mb-1.5">Kata Sandi / Password</label>
               <div className="relative">
                 <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3" />
                 <input
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-500 font-mono"
+                  placeholder={activeLoginType === 'sekolah' ? 'sekolah123' : 'adminn'}
+                  className="w-full pl-10 pr-10 py-2.5 bg-slate-800/80 border border-slate-700/80 rounded-xl text-white outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all placeholder:text-slate-500 font-mono"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 text-slate-400 hover:text-slate-200 cursor-pointer"
+                  title={showPassword ? 'Sembunyikan' : 'Tampilkan'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
               </div>
             </div>
 
@@ -155,10 +211,10 @@ export const LoginView: React.FC = () => {
                   </div>
                 ) : (
                   <div>
-                    <span className="font-semibold text-white">Default Login Satuan Pendidikan:</span>
+                    <span className="font-semibold text-white">Kredensial Satuan Pendidikan:</span>
                     <div className="mt-1 text-slate-400 space-y-0.5">
-                      <div>Username: <strong className="text-emerald-400 font-mono">NPSN Resmi</strong> (Contoh: 20309653 / 20363271)</div>
-                      <div>Password Default: <strong className="text-amber-300 font-mono">sekolah123</strong> (sebelum diubah)</div>
+                      <div>Username: <strong className="text-emerald-400 font-mono">NPSN Resmi Sekolah</strong> (Contoh: 20363271 / 20309653)</div>
+                      <div>Password Default: <strong className="text-amber-300 font-mono">sekolah123</strong> (atau kata sandi yang telah diatur)</div>
                     </div>
                   </div>
                 )}
@@ -170,7 +226,7 @@ export const LoginView: React.FC = () => {
               disabled={isSubmitting || loading}
               className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 transition-all flex items-center justify-center gap-2 group cursor-pointer"
             >
-              <span>{isSubmitting ? 'Memverifikasi...' : 'Masuk ke Sistem'}</span>
+              <span>{isSubmitting ? 'Memverifikasi Kredensial...' : 'Masuk ke Sistem'}</span>
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </form>
@@ -184,3 +240,4 @@ export const LoginView: React.FC = () => {
     </div>
   );
 };
+
