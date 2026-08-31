@@ -64,15 +64,18 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
-    const saved = localStorage.getItem('sim_dikdasmen_user');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch {
-        return DEMO_USERS['Super Admin'];
+    try {
+      const saved = localStorage.getItem('sim_dikdasmen_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && parsed.id && parsed.role) {
+          return parsed;
+        }
       }
+    } catch (e) {
+      console.warn('Failed to parse saved session:', e);
     }
-    return DEMO_USERS['Super Admin'];
+    return null;
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(false);

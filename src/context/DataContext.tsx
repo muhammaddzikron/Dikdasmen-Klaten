@@ -15,7 +15,10 @@ import {
   LogAktivitas,
   SystemSetting,
   CapabilityCategory,
+  MasterJenisSk,
+  MasterSubJenisSk,
 } from '../types';
+import { DEFAULT_MASTER_JENIS_SK, DEFAULT_MASTER_SUB_JENIS_SK } from '../lib/masterSkDefaults';
 import {
   addRecord,
   batchAddRecords,
@@ -48,11 +51,16 @@ interface DataContextType {
   skGuruList: SkDocument[];
   skTendikList: SkDocument[];
   skKepalaSekolahList: SkDocument[];
+  skPendirianList: SkDocument[];
   allSkList: SkDocument[];
   mutasiList: MutasiRecord[];
   notifikasiList: NotificationItem[];
   logList: LogAktivitas[];
   settingsList: SystemSetting[];
+
+  // Master SK Data
+  masterJenisSkList: MasterJenisSk[];
+  masterSubJenisSkList: MasterSubJenisSk[];
 
   // Filtered views based on RBAC & Active School selector
   filteredSekolahList: Sekolah[];
@@ -113,10 +121,19 @@ interface DataContextType {
   restoreSiswa: (id: string) => Promise<void>;
   importSiswaBatch: (items: Omit<Siswa, 'id'>[]) => Promise<number>;
 
-  submitSk: (data: Omit<SkDocument, 'id'>) => Promise<string>;
+  submitSk: (data: any) => Promise<string>;
   addSk: (data: any) => Promise<string>;
   updateSk: (id: string, data: Partial<SkDocument>, collectionName?: string) => Promise<void>;
   deleteSk: (id: string, collectionNameOrPermanent?: string | boolean, isPermanent?: boolean) => Promise<void>;
+
+  // Master SK Operations
+  addMasterJenisSk: (data: Omit<MasterJenisSk, 'id'>) => Promise<string>;
+  updateMasterJenisSk: (id: string, data: Partial<MasterJenisSk>) => Promise<void>;
+  deleteMasterJenisSk: (id: string, isPermanent?: boolean) => Promise<void>;
+  addMasterSubJenisSk: (data: Omit<MasterSubJenisSk, 'id'>) => Promise<string>;
+  updateMasterSubJenisSk: (id: string, data: Partial<MasterSubJenisSk>) => Promise<void>;
+  deleteMasterSubJenisSk: (id: string, isPermanent?: boolean) => Promise<void>;
+  resetMasterSkToDefault: () => Promise<void>;
 
   submitMutasi: (data: Omit<MutasiRecord, 'id' | 'createdAt'>) => Promise<void>;
   addMutasi: (data: any) => Promise<void>;
@@ -153,6 +170,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [skGuruList, setSkGuruList] = useState<SkDocument[]>([]);
   const [skTendikList, setSkTendikList] = useState<SkDocument[]>([]);
   const [skKepalaSekolahList, setSkKepalaSekolahList] = useState<SkDocument[]>([]);
+  const [skPendirianList, setSkPendirianList] = useState<SkDocument[]>([]);
+  const [masterJenisSkList, setMasterJenisSkList] = useState<MasterJenisSk[]>(DEFAULT_MASTER_JENIS_SK);
+  const [masterSubJenisSkList, setMasterSubJenisSkList] = useState<MasterSubJenisSk[]>(DEFAULT_MASTER_SUB_JENIS_SK);
   const [mutasiList, setMutasiList] = useState<MutasiRecord[]>([]);
   const [notifikasiList, setNotifikasiList] = useState<NotificationItem[]>([]);
   const [logList, setLogList] = useState<LogAktivitas[]>([]);
@@ -188,6 +208,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setSkGuruList(fallback.skGuruList);
     setSkTendikList(fallback.skTendikList);
     setSkKepalaSekolahList(fallback.skKepalaSekolahList);
+    setSkPendirianList([]);
+    setMasterJenisSkList(DEFAULT_MASTER_JENIS_SK);
+    setMasterSubJenisSkList(DEFAULT_MASTER_SUB_JENIS_SK);
     setMutasiList(fallback.mutasiList);
     setNotifikasiList(fallback.notifikasiList);
     setLogList(fallback.logList);
@@ -200,16 +223,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubs: (() => void)[] = [];
 
     try {
-      const subscribeCollection = <T,>(name: string, setter: React.Dispatch<React.SetStateAction<T[]>>) => {
+      const subscribeCollection = <T,>(name: string, setter: React.Dispatch<React.SetStateAction<T[]>>, defaultFallback?: T[]) => {
         const colRef = collection(db, name);
         const unsub = onSnapshot(
           colRef,
           (snapshot) => {
-            const items = snapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-            })) as T[];
-            setter(items);
+            if (snapshot.empty && defaultFallback && defaultFallback.length > 0) {
+              setter(defaultFallback);
+            } else {
+              const items = snapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              })) as T[];
+              if (items.length === 0 && defaultFallback) {
+                setter(defaultFallback);
+              } else {
+                setter(items);
+              }
+            }
             setIsLoading(false);
           },
           (error) => {
@@ -222,6 +253,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ) {
               setIsQuotaExceeded(true);
               applyFallbackData();
+            }
+            if (defaultFallback) {
+              setter(defaultFallback);
             }
             try {
               handleFirestoreError(error, OperationType.GET, name);
@@ -242,6 +276,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscribeCollection<SkDocument>('skGuru', setSkGuruList);
       subscribeCollection<SkDocument>('skTendik', setSkTendikList);
       subscribeCollection<SkDocument>('skKepalaSekolah', setSkKepalaSekolahList);
+      subscribeCollection<SkDocument>('skPendirian', setSkPendirianList);
+      subscribeCollection<MasterJenisSk>('masterJenisSk', setMasterJenisSkList, DEFAULT_MASTER_JENIS_SK);
+      subscribeCollection<MasterSubJenisSk>('masterSubJenisSk', setMasterSubJenisSkList, DEFAULT_MASTER_SUB_JENIS_SK);
       subscribeCollection<MutasiRecord>('mutasi', setMutasiList);
       subscribeCollection<NotificationItem>('notifikasi', setNotifikasiList);
       subscribeCollection<LogAktivitas>('logAktivitas', setLogList);
@@ -276,10 +313,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Combine all SKs
   const allSkList = useMemo(() => {
-    return [...skGuruList, ...skTendikList, ...skKepalaSekolahList].sort((a, b) =>
+    return [...skGuruList, ...skTendikList, ...skKepalaSekolahList, ...skPendirianList].sort((a, b) =>
       (b.createdAt || '').localeCompare(a.createdAt || '')
     );
-  }, [skGuruList, skTendikList, skKepalaSekolahList]);
+  }, [skGuruList, skTendikList, skKepalaSekolahList, skPendirianList]);
 
   // Helper for computing categoryCapability based on student count
   const computeCapabilityCategory = (studentCount: number): CapabilityCategory => {
@@ -643,13 +680,45 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   // Operations: SK (Surat Keputusan)
+  const getSkCollection = (data: any, id?: string): string => {
+    if (data?.collectionName) return data.collectionName;
+    const typeStr = data?.type || data?.skTypeName || '';
+    const targetTypeStr = data?.targetType || (data?.recipient_type === 'SATUAN PENDIDIKAN' ? 'Sekolah' : '');
+    
+    if (typeStr.includes('Pendidik') || typeStr === 'SK Guru' || targetTypeStr === 'Guru') {
+      return 'skGuru';
+    }
+    if (typeStr.includes('Tenaga Kependidikan') || typeStr === 'SK Tendik' || targetTypeStr === 'Tendik') {
+      return 'skTendik';
+    }
+    if (typeStr.includes('Kepala Sekolah') || typeStr === 'SK Kepala Sekolah' || targetTypeStr === 'KepalaSekolah' || targetTypeStr === 'Kepala Sekolah') {
+      return 'skKepalaSekolah';
+    }
+    if (typeStr.includes('Pendirian') || typeStr.includes('Operasional') || typeStr === 'SK Pendirian' || targetTypeStr === 'Sekolah') {
+      return 'skPendirian';
+    }
+    if (id) {
+      if (skGuruList.some((s) => s.id === id)) return 'skGuru';
+      if (skTendikList.some((s) => s.id === id)) return 'skTendik';
+      if (skKepalaSekolahList.some((s) => s.id === id)) return 'skKepalaSekolah';
+      if (skPendirianList.some((s) => s.id === id)) return 'skPendirian';
+    }
+    return 'skGuru';
+  };
+
   const submitSk = async (data: any) => {
-    const colName = data.targetType === 'Guru' || data.type === 'SK Guru' ? 'skGuru' : data.targetType === 'Tendik' || data.type === 'SK Tendik' ? 'skTendik' : 'skKepalaSekolah';
+    const colName = getSkCollection(data);
     const id = await addRecord(colName, { ...data, isDeleted: false });
-    await logActivity(currentUser?.email || 'System', 'PENGAJUAN_SK', `Pengajuan SK: ${data.title}`, currentUser?.name, currentUser?.role);
+    await logActivity(
+      currentUser?.email || 'System',
+      'PENGAJUAN_SK',
+      `Pengajuan SK: ${data.title || data.skNumber || 'Baru'} (${data.type || data.skTypeName})`,
+      currentUser?.name,
+      currentUser?.role
+    );
     await createNotification({
       title: 'Pengajuan SK Baru Masuk',
-      message: `Terdapat pengajuan SK baru (${data.title}) yang membutuhkan verifikasi Admin Dikdasmen.`,
+      message: `Terdapat pengajuan SK baru (${data.title || 'SK'}) yang membutuhkan verifikasi Admin Dikdasmen.`,
       type: 'info',
       targetRole: 'Admin',
     });
@@ -662,15 +731,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateSk = async (id: string, data: Partial<SkDocument>, collectionName?: string) => {
-    const targetCol = collectionName || (skGuruList.some(s => s.id === id) ? 'skGuru' : skTendikList.some(s => s.id === id) ? 'skTendik' : 'skKepalaSekolah');
+    const targetCol = collectionName || getSkCollection(data, id);
     await updateRecord(targetCol, id, data);
-    await logActivity(currentUser?.email || 'System', 'UPDATE_SK', `Status/data SK ID ${id} diperbarui: ${data.status || 'Data Update'}`, currentUser?.name, currentUser?.role);
+    await logActivity(
+      currentUser?.email || 'System',
+      'UPDATE_SK',
+      `Status/data SK ID ${id} diperbarui: ${data.status || 'Data Update'}`,
+      currentUser?.name,
+      currentUser?.role
+    );
     showToast('Data SK berhasil diperbarui!', 'success');
   };
 
   const deleteSk = async (id: string, collectionNameOrPermanent?: string | boolean, isPermanent?: boolean) => {
     const perm = typeof collectionNameOrPermanent === 'boolean' ? collectionNameOrPermanent : (isPermanent || false);
-    const colName = typeof collectionNameOrPermanent === 'string' ? collectionNameOrPermanent : (skGuruList.some(s => s.id === id) ? 'skGuru' : skTendikList.some(s => s.id === id) ? 'skTendik' : 'skKepalaSekolah');
+    const colName = typeof collectionNameOrPermanent === 'string' ? collectionNameOrPermanent : getSkCollection({}, id);
 
     if (perm) {
       await hardDeleteRecord(colName, id);
@@ -679,6 +754,83 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await softDeleteRecord(colName, id);
       showToast('Dokumen SK dipindahkan ke Recycle Bin.', 'info');
     }
+  };
+
+  // Operations: Master Jenis SK & Master Sub-Jenis SK
+  const addMasterJenisSk = async (data: Omit<MasterJenisSk, 'id'>) => {
+    const id = await addRecord('masterJenisSk', { ...data, isDeleted: false });
+    await logActivity(
+      currentUser?.email || 'System',
+      'TAMBAH_MASTER_JENIS_SK',
+      `Menambahkan Master Jenis SK: ${data.name} (${data.code})`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Master Jenis SK ${data.name} berhasil ditambahkan!`, 'success');
+    return id;
+  };
+
+  const updateMasterJenisSk = async (id: string, data: Partial<MasterJenisSk>) => {
+    await updateRecord('masterJenisSk', id, data);
+    await logActivity(
+      currentUser?.email || 'System',
+      'UPDATE_MASTER_JENIS_SK',
+      `Memperbarui Master Jenis SK ID: ${id}`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast('Master Jenis SK berhasil diperbarui!', 'success');
+  };
+
+  const deleteMasterJenisSk = async (id: string, isPermanent: boolean = false) => {
+    if (isPermanent) {
+      await hardDeleteRecord('masterJenisSk', id);
+      showToast('Master Jenis SK dihapus permanen!', 'warning');
+    } else {
+      await softDeleteRecord('masterJenisSk', id);
+      showToast('Master Jenis SK dinonaktifkan.', 'info');
+    }
+  };
+
+  const addMasterSubJenisSk = async (data: Omit<MasterSubJenisSk, 'id'>) => {
+    const id = await addRecord('masterSubJenisSk', { ...data, isDeleted: false });
+    await logActivity(
+      currentUser?.email || 'System',
+      'TAMBAH_MASTER_SUB_JENIS_SK',
+      `Menambahkan Sub-Jenis SK: ${data.name} (${data.code})`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Sub-Jenis SK ${data.name} berhasil ditambahkan!`, 'success');
+    return id;
+  };
+
+  const updateMasterSubJenisSk = async (id: string, data: Partial<MasterSubJenisSk>) => {
+    await updateRecord('masterSubJenisSk', id, data);
+    await logActivity(
+      currentUser?.email || 'System',
+      'UPDATE_MASTER_SUB_JENIS_SK',
+      `Memperbarui Sub-Jenis SK ID: ${id}`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast('Sub-Jenis SK berhasil diperbarui!', 'success');
+  };
+
+  const deleteMasterSubJenisSk = async (id: string, isPermanent: boolean = false) => {
+    if (isPermanent) {
+      await hardDeleteRecord('masterSubJenisSk', id);
+      showToast('Sub-Jenis SK dihapus permanen!', 'warning');
+    } else {
+      await softDeleteRecord('masterSubJenisSk', id);
+      showToast('Sub-Jenis SK dinonaktifkan.', 'info');
+    }
+  };
+
+  const resetMasterSkToDefault = async () => {
+    setMasterJenisSkList(DEFAULT_MASTER_JENIS_SK);
+    setMasterSubJenisSkList(DEFAULT_MASTER_SUB_JENIS_SK);
+    showToast('Master Jenis & Sub-Jenis SK berhasil direset ke konfigurasi standar!', 'info');
   };
 
   // Operations: Mutasi
@@ -784,7 +936,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         skGuruList,
         skTendikList,
         skKepalaSekolahList,
+        skPendirianList,
         allSkList,
+        masterJenisSkList,
+        masterSubJenisSkList,
         mutasiList,
         notifikasiList,
         logList,
@@ -834,6 +989,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         addSk,
         updateSk,
         deleteSk,
+        addMasterJenisSk,
+        updateMasterJenisSk,
+        deleteMasterJenisSk,
+        addMasterSubJenisSk,
+        updateMasterSubJenisSk,
+        deleteMasterSubJenisSk,
+        resetMasterSkToDefault,
         submitMutasi,
         addMutasi,
         updateMutasi,

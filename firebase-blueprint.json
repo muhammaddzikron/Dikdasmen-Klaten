@@ -246,6 +246,43 @@
         "description": { "type": "string" }
       },
       "required": ["key", "value"]
+    },
+    "MasterJenisSk": {
+      "title": "MasterJenisSk",
+      "description": "Konfigurasi Master Kategori dan Format Jenis SK",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "description": { "type": "string" },
+        "recipientType": { "type": "string", "enum": ["INDIVIDU", "SATUAN PENDIDIKAN"] },
+        "numberFormat": { "type": "string" },
+        "status": { "type": "string", "enum": ["Aktif", "Nonaktif"] },
+        "order": { "type": "number" },
+        "kopText": { "type": "string" },
+        "signerName": { "type": "string" },
+        "signerRole": { "type": "string" }
+      },
+      "required": ["name", "code", "recipientType"]
+    },
+    "MasterSubJenisSk": {
+      "title": "MasterSubJenisSk",
+      "description": "Konfigurasi Sub-Jenis SK dan Ketentuan Keputusan",
+      "type": "object",
+      "properties": {
+        "skTypeCode": { "type": "string" },
+        "skTypeName": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "titleTemplate": { "type": "string" },
+        "description": { "type": "string" },
+        "recipientType": { "type": "string", "enum": ["INDIVIDU", "SATUAN PENDIDIKAN"] },
+        "validityPeriodMonths": { "type": "number" },
+        "validityPeriodText": { "type": "string" },
+        "status": { "type": "string", "enum": ["Aktif", "Nonaktif"] },
+        "order": { "type": "number" }
+      },
+      "required": ["skTypeCode", "name", "code", "recipientType"]
     }
   },
   "firestore": {
@@ -304,6 +341,14 @@
     "/settings/{settingId}": {
       "schema": "Setting",
       "description": "Pengaturan Sistem"
+    },
+    "/masterJenisSk/{masterId}": {
+      "schema": "MasterJenisSk",
+      "description": "Master Jenis SK"
+    },
+    "/masterSubJenisSk/{subId}": {
+      "schema": "MasterSubJenisSk",
+      "description": "Master Sub-Jenis SK"
     }
   }
 }

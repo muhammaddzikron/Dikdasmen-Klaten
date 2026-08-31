@@ -214,53 +214,181 @@ export interface Siswa {
 }
 
 export type SkStatus = 'Terbit' | 'Belum Terbit' | 'Ditolak';
-export type SubmissionType = 'Baru' | 'Perpanjangan';
-export type SkType = 'SK Guru' | 'SK Tendik' | 'SK Kepala Sekolah' | 'SK Pendirian';
+export type SubmissionType = 'Baru' | 'Perpanjangan' | 'Perubahan' | 'Revisi';
+export type SkMainType =
+  | 'SK Guru (Pendidik)'
+  | 'SK Tenaga Kependidikan'
+  | 'SK Kepala Sekolah'
+  | 'SK Pendirian / Operasional';
+export type SkType = SkMainType | 'SK Guru' | 'SK Tendik' | 'SK Kepala Sekolah' | 'SK Pendirian';
+export type SkTypeCode = 'GURU' | 'TENDIK' | 'KS' | 'OPS';
+export type RecipientCategory = 'INDIVIDU' | 'SATUAN PENDIDIKAN';
+export type RecipientType = 'INDIVIDU' | 'SATUAN PENDIDIKAN';
+export type RecipientTypeKey = 'PERSON' | 'SCHOOL';
+
+export interface DocumentRequirement {
+  id: string;
+  name: string;
+  isRequired: boolean;
+  description?: string;
+}
+
+export interface FormFieldConfig {
+  fieldKey: string;
+  label: string;
+  isRequired: boolean;
+  type: 'text' | 'date' | 'select' | 'number' | 'textarea';
+  options?: string[];
+  placeholder?: string;
+  group?: 'identitas' | 'kepegawaian' | 'sekolah' | 'masa_berlaku';
+}
+
+export interface MasterSubJenisSk {
+  id: string;
+  skTypeCode: SkTypeCode;
+  skTypeName: SkMainType;
+  name: string;
+  code: string;
+  titleTemplate: string;
+  description: string;
+  recipientType: RecipientCategory;
+  validityPeriodMonths: number;
+  validityPeriodText: string;
+  status: 'Aktif' | 'Nonaktif';
+  order: number;
+  requirements?: DocumentRequirement[];
+  customFields?: FormFieldConfig[];
+  menimbang?: string[];
+  mengingat?: string[];
+  memutuskan?: string[];
+  diktum?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  isDeleted?: boolean;
+}
+
+export interface MasterJenisSk {
+  id: string;
+  name: SkMainType;
+  code: SkTypeCode;
+  description: string;
+  recipientType: RecipientCategory;
+  numberFormat: string;
+  status: 'Aktif' | 'Nonaktif';
+  order: number;
+  fields: FormFieldConfig[];
+  defaultRequirements: DocumentRequirement[];
+  subTypes?: MasterSubJenisSk[];
+  kopText?: string;
+  signerName?: string;
+  signerRole?: string;
+  menimbang?: string[];
+  mengingat?: string[];
+  memutuskan?: string[];
+  diktum?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  isDeleted?: boolean;
+}
+
+export interface UploadedSkDocument {
+  requirementId: string;
+  name: string;
+  fileUrl: string;
+  fileName: string;
+  fileSize?: number;
+  uploadedAt: string;
+}
 
 export interface SuratKeputusan {
   id: string;
+  sk_type_id?: string;
+  sk_sub_type_id?: string;
+  skTypeName?: SkMainType;
+  skSubTypeName?: string;
   skNumber: string;
+  sk_number?: string;
   title: string;
   schoolId: string;
+  school_id?: string;
+  schoolName?: string;
   type: SkType;
+  subType?: string;
   submissionType: SubmissionType;
+  submission_type?: SubmissionType;
+  recipient_type?: RecipientTypeKey | RecipientCategory;
+  recipient_id?: string;
+  recipient_data?: Record<string, any>;
   status: SkStatus;
+  verification_status?: 'Menunggu Verifikasi' | 'Diverifikasi' | 'Ditolak';
+  approval_status?: 'Menunggu Persetujuan' | 'Disetujui' | 'Ditolak';
   targetName?: string;
   targetId?: string;
+  targetCategory?: string;
   skStartDate?: string;
   skEndDate?: string;
+  start_date?: string;
+  end_date?: string;
   signerName?: string;
   signerRole?: string;
   documentUrl?: string;
   fileNbmUrl?: string;
   fileIjazahUrl?: string;
   fileSkLamaUrl?: string;
+  uploaded_documents?: UploadedSkDocument[];
   notes?: string;
+  rejectionReason?: string;
+  verifiedBy?: string;
+  verifiedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
   isDeleted?: boolean;
   createdAt?: string;
+  created_at?: string;
+  updatedAt?: string;
+  updated_at?: string;
 }
 
 export interface SkDocument {
   id: string;
+  sk_type_id?: string;
+  sk_sub_type_id?: string;
+  skTypeName?: SkMainType;
+  skSubTypeName?: string;
   skNumber: string;
+  sk_number?: string;
   skDate: string;
   skEndDate: string;
+  start_date?: string;
+  end_date?: string;
   title: string;
-  targetId: string; // guruId | tendikId | kepalaSekolahId
+  targetId: string; // guruId | tendikId | kepalaSekolahId | schoolId
   targetName?: string;
-  targetType: 'Guru' | 'Tendik' | 'KepalaSekolah';
+  targetType: 'Guru' | 'Tendik' | 'KepalaSekolah' | 'Sekolah' | string;
+  recipient_type?: RecipientTypeKey | RecipientCategory;
+  recipient_id?: string;
+  recipient_data?: Record<string, any>;
   schoolId: string;
+  school_id?: string;
+  schoolName?: string;
   fileUrl?: string;
   fileName?: string;
   status: SkStatus;
+  verification_status?: string;
+  approval_status?: string;
   submissionType: SubmissionType;
+  submission_type?: SubmissionType;
   nbmUrl?: string;
   ijazahUrl?: string;
   skLamaUrl?: string;
+  uploaded_documents?: UploadedSkDocument[];
   rejectionReason?: string;
   verifiedBy?: string;
   verifiedAt?: string;
+  approvedBy?: string;
+  approvedAt?: string;
   createdAt: string;
+  created_at?: string;
   isDeleted?: boolean;
 }
 

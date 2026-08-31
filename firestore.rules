@@ -6,16 +6,6 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Default deny for unspecified paths
-    match /{document=**} {
-      allow read, write: if true;
-    }
-
-    // Users collection
-    match /users/{userId} {
-      allow read, write: if true;
-    }
-
     // Cabang collection
     match /cabang/{cabangId} {
       allow read, write: if true;
@@ -59,25 +49,40 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
-    // Notifikasi
+    match /skPendirian/{skId} {
+      allow read, write: if true;
+    }
+
+    // Master Jenis & Sub-Jenis SK Collections
+    match /masterJenisSk/{masterId} {
+      allow read, write: if true;
+    }
+
+    match /masterSubJenisSk/{subId} {
+      allow read, write: if true;
+    }
+
+    // Notifikasi & Log Aktivitas
     match /notifikasi/{notifId} {
       allow read, write: if true;
     }
 
-    // Log Aktivitas
     match /logAktivitas/{logId} {
       allow read, write: if true;
     }
 
-    // Mutasi
+    // Mutasi & Settings
     match /mutasi/{mutasiId} {
       allow read, write: if true;
     }
 
-    // Settings
     match /settings/{settingId} {
+      allow read, write: if true;
+    }
+
+    // Default match for other collections
+    match /{document=**} {
       allow read, write: if true;
     }
   }
 }
-
