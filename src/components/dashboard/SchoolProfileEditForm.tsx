@@ -142,7 +142,7 @@ export const SchoolProfileEditForm: React.FC<SchoolProfileEditFormProps> = ({
 
           <div>
             <label className="font-bold text-slate-700 dark:text-slate-300 block mb-1">
-              Cabang / PCM Naungan
+              Majelis Cabang Naungan
             </label>
             <select
               value={formData.cabangId || ''}

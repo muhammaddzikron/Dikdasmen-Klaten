@@ -163,24 +163,24 @@ export const CabangModule: React.FC = () => {
       const underSchools = sekolahList.filter((s) => s.cabangId === c.id && !s.isDeleted);
       return {
         No: index + 1,
-        'Kode Cabang': c.code,
-        'Nama Cabang / PCM': c.name,
-        'Ketua PCM': c.ketuaName || '-',
+        'Kode Majelis Cabang': c.code,
+        'Nama Majelis Cabang': c.name,
+        'Ketua Majelis Cabang': c.ketuaName || '-',
         'Nomor Telepon': c.phone || '-',
-        'Email Cabang': c.email || '-',
-        'Alamat Kantor PCM': c.address || '-',
+        'Email Majelis Cabang': c.email || '-',
+        'Alamat Kantor Majelis Cabang': c.address || '-',
         'Username Login': c.username || c.code.toLowerCase().replace(/[^a-z0-9]/g, '_'),
         'Password Default': c.password || 'cabang123',
         'Jumlah Satuan Pendidikan': `${underSchools.length} Sekolah`,
         'Tanggal Terdaftar': c.createdAt ? new Date(c.createdAt).toLocaleDateString('id-ID') : '-',
       };
     });
-    exportToExcel(`Data_Master_Cabang_PCM_Klaten_${Date.now()}`, 'Data Cabang PCM', rows);
-    showToast('Data Cabang (PCM) berhasil diekspor ke format Excel!', 'success');
+    exportToExcel(`Data_Master_Majelis_Cabang_Klaten_${Date.now()}`, 'Data Majelis Cabang', rows);
+    showToast('Data Majelis Cabang berhasil diekspor ke format Excel!', 'success');
   };
 
   const handleExportPDF = () => {
-    const headers = ['No', 'Kode', 'Nama Cabang / PCM', 'Ketua PCM', 'Telepon', 'Email', 'Alamat Kantor', 'Jml Sekolah'];
+    const headers = ['No', 'Kode', 'Nama Majelis Cabang', 'Ketua Majelis Cabang', 'Telepon', 'Email', 'Alamat Kantor', 'Jml Sekolah'];
     const rows = filtered.map((c, index) => {
       const underSchools = sekolahList.filter((s) => s.cabangId === c.id && !s.isDeleted);
       return [
@@ -194,8 +194,8 @@ export const CabangModule: React.FC = () => {
         `${underSchools.length} Sekolah`,
       ];
     });
-    exportToPDF('Rekapitulasi Data Master Cabang / PCM Majelis Dikdasmen & PNF Klaten', headers, rows, `Laporan_Master_Cabang_PCM_${Date.now()}`);
-    showToast('Laporan PDF Master Cabang (PCM) berhasil dibuat!', 'success');
+    exportToPDF('Rekapitulasi Data Master Majelis Cabang Dikdasmen & PNF Klaten', headers, rows, `Laporan_Master_Majelis_Cabang_${Date.now()}`);
+    showToast('Laporan PDF Master Majelis Cabang berhasil dibuat!', 'success');
   };
 
   // Download Sample Template for Upload
@@ -203,61 +203,61 @@ export const CabangModule: React.FC = () => {
     const sampleData = [
       {
         'Kode Cabang': 'PCM-01',
-        'Nama Cabang / PCM': 'PCM Klaten Kota',
-        'Ketua PCM': 'H. Budi Santoso, S.Pd.',
+        'Nama Majelis Cabang': 'PCM Klaten Kota',
+        'Ketua Majelis Cabang': 'H. Budi Santoso, S.Pd.',
         'Nomor Telepon': '0272-321184',
         'Email Cabang': 'pcm_kotaklaten@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Pemuda No. 123, Klaten Tengah',
+        'Alamat Kantor Majelis Cabang': 'Jl. Pemuda No. 123, Klaten Tengah',
         'Username Login': 'pcm_klatenkota',
         'Password Default': 'cabang123',
       },
       {
         'Kode Cabang': 'PCM-02',
-        'Nama Cabang / PCM': 'PCM Delanggu',
-        'Ketua PCM': 'Drs. H. Mulyono, M.Ag.',
+        'Nama Majelis Cabang': 'PCM Delanggu',
+        'Ketua Majelis Cabang': 'Drs. H. Mulyono, M.Ag.',
         'Nomor Telepon': '0272-551234',
         'Email Cabang': 'pcm_delanggu@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Raya Delanggu No. 45, Delanggu',
+        'Alamat Kantor Majelis Cabang': 'Jl. Raya Delanggu No. 45, Delanggu',
         'Username Login': 'pcm_delanggu',
         'Password Default': 'cabang123',
       },
       {
         'Kode Cabang': 'PCM-03',
-        'Nama Cabang / PCM': 'PCM Pedan',
-        'Ketua PCM': 'H. Wahyudi, S.Ag.',
+        'Nama Majelis Cabang': 'PCM Pedan',
+        'Ketua Majelis Cabang': 'H. Wahyudi, S.Ag.',
         'Nomor Telepon': '0272-892110',
         'Email Cabang': 'pcm_pedan@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Ronggowarsito No. 18, Pedan',
+        'Alamat Kantor Majelis Cabang': 'Jl. Ronggowarsito No. 18, Pedan',
         'Username Login': 'pcm_pedan',
         'Password Default': 'cabang123',
       },
       {
         'Kode Cabang': 'PCM-04',
-        'Nama Cabang / PCM': 'PCM Prambanan',
-        'Ketua PCM': 'Ir. H. Sudirman',
+        'Nama Majelis Cabang': 'PCM Prambanan',
+        'Ketua Majelis Cabang': 'Ir. H. Sudirman',
         'Nomor Telepon': '0272-491022',
         'Email Cabang': 'pcm_prambanan@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Candi Sewu No. 05, Prambanan',
+        'Alamat Kantor Majelis Cabang': 'Jl. Candi Sewu No. 05, Prambanan',
         'Username Login': 'pcm_prambanan',
         'Password Default': 'cabang123',
       },
       {
         'Kode Cabang': 'PCM-05',
-        'Nama Cabang / PCM': 'PCM Cawas',
-        'Ketua PCM': 'Drs. H. Sukamto',
+        'Nama Majelis Cabang': 'PCM Cawas',
+        'Ketua Majelis Cabang': 'Drs. H. Sukamto',
         'Nomor Telepon': '0813-2900-1122',
         'Email Cabang': 'pcm_cawas@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Tembus Cawas No. 12, Cawas',
+        'Alamat Kantor Majelis Cabang': 'Jl. Tembus Cawas No. 12, Cawas',
         'Username Login': 'pcm_cawas',
         'Password Default': 'cabang123',
       },
       {
         'Kode Cabang': 'PCM-06',
-        'Nama Cabang / PCM': 'PCM Trucuk',
-        'Ketua PCM': 'H. Sunarto, M.Pd.',
+        'Nama Majelis Cabang': 'PCM Trucuk',
+        'Ketua Majelis Cabang': 'H. Sunarto, M.Pd.',
         'Nomor Telepon': '0812-3344-5566',
         'Email Cabang': 'pcm_trucuk@muhammadiyah.id',
-        'Alamat Kantor PCM': 'Jl. Trucuk-Sajen No. 08, Trucuk',
+        'Alamat Kantor Majelis Cabang': 'Jl. Trucuk-Sajen No. 08, Trucuk',
         'Username Login': 'pcm_trucuk',
         'Password Default': 'cabang123',
       },
@@ -309,17 +309,17 @@ export const CabangModule: React.FC = () => {
             return '';
           };
 
-          const name = getVal('Nama Cabang / PCM', 'Nama Cabang', 'Nama PCM', 'Nama', 'Cabang', 'name') || `PCM Baru ${idx + 1}`;
-          let code = getVal('Kode Cabang', 'Kode', 'Kode PCM', 'code');
+          const name = getVal('Nama Majelis Cabang', 'Nama Cabang / PCM', 'Nama Cabang', 'Nama PCM', 'Nama', 'Cabang', 'name') || `Majelis Cabang Baru ${idx + 1}`;
+          let code = getVal('Kode Majelis Cabang', 'Kode Cabang', 'Kode', 'Kode PCM', 'code');
           if (!code) {
             const nextNum = activeCabangs.length + idx + 1;
             code = `PCM-${nextNum < 10 ? '0' + nextNum : nextNum}`;
           }
 
-          const ketuaName = getVal('Ketua PCM', 'Ketua', 'Nama Ketua', 'ketua', 'ketuaName');
+          const ketuaName = getVal('Ketua Majelis Cabang', 'Ketua PCM', 'Ketua', 'Nama Ketua', 'ketua', 'ketuaName');
           const phone = getVal('Nomor Telepon', 'Telepon', 'No HP', 'No Telepon', 'HP', 'phone');
-          const email = getVal('Email Cabang', 'Email', 'Surel', 'email');
-          const address = getVal('Alamat Kantor PCM', 'Alamat Kantor', 'Alamat', 'address');
+          const email = getVal('Email Majelis Cabang', 'Email Cabang', 'Email', 'Surel', 'email');
+          const address = getVal('Alamat Kantor Majelis Cabang', 'Alamat Kantor PCM', 'Alamat Kantor', 'Alamat', 'address');
           
           let username = getVal('Username Login', 'Username', 'User', 'username');
           if (!username) {
@@ -433,13 +433,13 @@ export const CabangModule: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Master Data Cabang (PCM)</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Master Data Majelis Cabang</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
-              {filtered.length} Cabang
+              {filtered.length} Majelis Cabang
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Daftar Pimpinan Cabang Muhammadiyah / Majelis Dikdasmen Cabang di tingkat kecamatan se-Kabupaten Klaten
+            Daftar Majelis Dikdasmen & PNF Cabang di tingkat kecamatan se-Kabupaten Klaten
           </p>
         </div>
 
@@ -449,7 +449,7 @@ export const CabangModule: React.FC = () => {
             type="button"
             onClick={handleExportExcel}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Ekspor seluruh data cabang ke format Microsoft Excel (.xlsx)"
+            title="Ekspor seluruh data majelis cabang ke format Microsoft Excel (.xlsx)"
           >
             <FileSpreadsheet className="w-3.5 h-3.5" />
             <span>Ekspor Excel</span>
@@ -460,7 +460,7 @@ export const CabangModule: React.FC = () => {
             type="button"
             onClick={handleExportPDF}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/50 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 text-xs font-bold transition-all shadow-xs cursor-pointer"
-            title="Cetak Laporan Rekapitulasi Data Cabang ke format PDF"
+            title="Cetak Laporan Rekapitulasi Data Majelis Cabang ke format PDF"
           >
             <FileText className="w-3.5 h-3.5" />
             <span>Cetak PDF</span>
@@ -477,10 +477,10 @@ export const CabangModule: React.FC = () => {
                 setIsImportModalOpen(true);
               }}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold transition-all shadow-xs cursor-pointer"
-              title="Unggah dan impor data cabang secara massal dari file Excel atau CSV"
+              title="Unggah dan impor data majelis cabang secara massal dari file Excel atau CSV"
             >
               <Upload className="w-3.5 h-3.5" />
-              <span>Upload Data Cabang</span>
+              <span>Upload Data Majelis Cabang</span>
             </button>
           )}
 
@@ -492,7 +492,7 @@ export const CabangModule: React.FC = () => {
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
-              <span>Tambah Cabang</span>
+              <span>Tambah Majelis Cabang</span>
             </button>
           )}
         </div>
@@ -504,7 +504,7 @@ export const CabangModule: React.FC = () => {
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Cari nama PCM, ketua, kode, alamat, username..."
+            placeholder="Cari nama Majelis Cabang, ketua, kode, alamat, username..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-9 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs outline-none focus:ring-2 focus:ring-emerald-500 shadow-sm"
@@ -604,7 +604,7 @@ export const CabangModule: React.FC = () => {
                     <div className="flex items-start gap-2">
                       <User className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                       <div>
-                        <span className="text-[11px] text-slate-400 block">Ketua PCM:</span>
+                        <span className="text-[11px] text-slate-400 block">Ketua Majelis Cabang:</span>
                         <strong className="text-slate-800 dark:text-slate-200 text-xs">{cabang.ketuaName || '-'}</strong>
                       </div>
                     </div>
@@ -704,8 +704,8 @@ export const CabangModule: React.FC = () => {
                 <tr className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 font-bold uppercase text-[10px] tracking-wider">
                   <th className="py-3 px-4">No</th>
                   <th className="py-3 px-4">Kode</th>
-                  <th className="py-3 px-4">Nama PCM</th>
-                  <th className="py-3 px-4">Ketua & Gelar</th>
+                  <th className="py-3 px-4">Nama Majelis Cabang</th>
+                  <th className="py-3 px-4">Ketua Majelis Cabang</th>
                   <th className="py-3 px-4">Kontak (Telp / Email)</th>
                   <th className="py-3 px-4">Alamat Kantor</th>
                   <th className="py-3 px-4">Kredensial Login</th>
@@ -815,7 +815,7 @@ export const CabangModule: React.FC = () => {
                   <Building className="w-4 h-4" />
                 </div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  {selectedItem ? 'Edit Cabang (PCM)' : 'Tambah Cabang Baru'}
+                  {selectedItem ? 'Edit Majelis Cabang' : 'Tambah Majelis Cabang Baru'}
                 </h3>
               </div>
               <button
@@ -829,7 +829,7 @@ export const CabangModule: React.FC = () => {
 
             <form onSubmit={handleSubmit} className="space-y-3.5 mt-4 text-xs">
               <div>
-                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Nama Cabang / PCM *</label>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Nama Majelis Cabang *</label>
                 <input
                   type="text"
                   required
@@ -842,7 +842,7 @@ export const CabangModule: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Kode Cabang *</label>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Kode Majelis Cabang *</label>
                   <input
                     type="text"
                     required
@@ -876,7 +876,7 @@ export const CabangModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Ketua PCM / Majelis Dikdasmen</label>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Ketua Majelis Cabang</label>
                 <input
                   type="text"
                   value={formData.ketuaName || ''}
@@ -898,7 +898,7 @@ export const CabangModule: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Email Cabang</label>
+                  <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Email Majelis Cabang</label>
                   <input
                     type="email"
                     value={formData.email || ''}
@@ -910,7 +910,7 @@ export const CabangModule: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Alamat Kantor Cabang / PCM</label>
+                <label className="font-semibold block mb-1 text-slate-700 dark:text-slate-300">Alamat Kantor Majelis Cabang</label>
                 <textarea
                   rows={2}
                   value={formData.address || ''}
@@ -932,7 +932,7 @@ export const CabangModule: React.FC = () => {
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-colors shadow-md shadow-emerald-600/20"
                 >
-                  Simpan Cabang
+                  Simpan Majelis Cabang
                 </button>
               </div>
             </form>
@@ -952,10 +952,10 @@ export const CabangModule: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 dark:text-white text-sm sm:text-base">
-                    Upload & Import Data Master Cabang (PCM)
+                    Upload & Import Data Master Majelis Cabang
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Impor massal data Pimpinan Cabang Muhammadiyah via file Excel (.xlsx) atau CSV
+                    Impor massal data Majelis Cabang via file Excel (.xlsx) atau CSV
                   </p>
                 </div>
               </div>
@@ -1082,8 +1082,8 @@ export const CabangModule: React.FC = () => {
                         <tr>
                           <th className="p-2 text-left">No</th>
                           <th className="p-2 text-left">Kode</th>
-                          <th className="p-2 text-left">Nama Cabang / PCM</th>
-                          <th className="p-2 text-left">Ketua PCM</th>
+                          <th className="p-2 text-left">Nama Majelis Cabang</th>
+                          <th className="p-2 text-left">Ketua Majelis Cabang</th>
                           <th className="p-2 text-left">Telepon / Email</th>
                           <th className="p-2 text-left">Username Login</th>
                           <th className="p-2 text-left">Status</th>
@@ -1158,7 +1158,7 @@ export const CabangModule: React.FC = () => {
                     <>
                       <Check className="w-4 h-4" />
                       <span>
-                        Simpan ({parsedData.filter((d) => d.status === 'valid').length}) Data Cabang
+                        Simpan ({parsedData.filter((d) => d.status === 'valid').length}) Data Majelis Cabang
                       </span>
                     </>
                   )}

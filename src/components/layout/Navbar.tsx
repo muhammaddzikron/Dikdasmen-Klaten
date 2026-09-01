@@ -204,17 +204,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-[11px] text-slate-500 font-semibold">Cabang:</span>
+              <span className="text-[11px] text-slate-500 font-semibold">Majelis Cabang:</span>
               <select
                 value={selectedCabangId}
                 onChange={(e) => {
                   setSelectedCabangId(e.target.value);
                   if (e.target.value !== 'ALL') setSelectedSekolahId('ALL');
                 }}
-                aria-label="Filter Cabang"
+                aria-label="Filter Majelis Cabang"
                 className="bg-transparent text-xs font-semibold text-slate-800 dark:text-slate-200 outline-hidden cursor-pointer max-w-[140px] truncate"
               >
-                <option value="ALL" className="dark:bg-slate-900">Semua Cabang / PCM</option>
+                <option value="ALL" className="dark:bg-slate-900">Semua Majelis Cabang</option>
                 {registeredCabangs.map((c) => (
                   <option key={c.id} value={c.id} className="dark:bg-slate-900">
                     {c.name}
@@ -321,7 +321,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
               {/* 2. Cabang Section */}
               <div className="px-3 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400 border-t border-slate-100 dark:border-slate-700/60 mt-1 flex items-center gap-1.5">
                 <Building2 className="w-3 h-3" />
-                <span>Mode Cabang / PCM Terdaftar:</span>
+                <span>Mode Majelis Cabang Terdaftar:</span>
               </div>
               <div className="max-h-36 overflow-y-auto divide-y divide-slate-50 dark:divide-slate-700/30">
                 {registeredCabangs.map((cabang) => {

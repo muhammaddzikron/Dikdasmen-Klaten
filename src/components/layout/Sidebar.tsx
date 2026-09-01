@@ -34,7 +34,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
 
   const activeCabangName =
     role === 'Cabang'
-      ? cabangList.find((c) => c.id === currentUser?.cabangId)?.name || 'PCM Wilayah'
+      ? cabangList.find((c) => c.id === currentUser?.cabangId)?.name || 'Majelis Cabang'
       : null;
 
   const menuSections = [
@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
           ? [
               {
                 id: 'cabang',
-                label: 'Cabang / PCM',
+                label: 'Majelis Cabang',
                 icon: Building,
               },
               {

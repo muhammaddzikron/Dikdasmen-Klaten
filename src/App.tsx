@@ -54,7 +54,7 @@ const MainLayout: React.FC = () => {
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
               <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Master Data Sekolah hanya dapat diakses oleh Super Admin, Admin, dan Cabang (PCM).
+                Modul Master Data Sekolah hanya dapat diakses oleh Super Admin, Admin, dan Majelis Cabang.
               </p>
             </div>
           );
@@ -67,7 +67,7 @@ const MainLayout: React.FC = () => {
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
               <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Master Data Cabang (PCM) hanya dapat diakses dan dikelola oleh Super Admin.
+                Modul Master Data Majelis Cabang hanya dapat diakses dan dikelola oleh Super Admin.
               </p>
             </div>
           );

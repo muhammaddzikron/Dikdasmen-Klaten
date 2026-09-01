@@ -497,16 +497,16 @@ export const SekolahModule: React.FC = () => {
         {currentUser?.role === 'Cabang' ? (
           <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold rounded-xl px-3 py-2 text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
             <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
-            <span className="truncate">Wilayah: {cabangList.find((c) => c.id === currentUser.cabangId)?.name || 'Cabang Anda'}</span>
+            <span className="truncate">Wilayah: {cabangList.find((c) => c.id === currentUser.cabangId)?.name || 'Majelis Cabang Anda'}</span>
           </div>
         ) : (
           <select
             value={filterCabang}
             onChange={(e) => setFilterCabang(e.target.value)}
-            aria-label="Filter Cabang"
+            aria-label="Filter Majelis Cabang"
             className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium rounded-xl px-3 py-2 outline-none"
           >
-            <option value="ALL">Semua Cabang / PCM</option>
+            <option value="ALL">Semua Majelis Cabang</option>
             {cabangList
               .filter((c) => !c.isDeleted)
               .map((c) => (
@@ -570,7 +570,7 @@ export const SekolahModule: React.FC = () => {
               <tr>
                 <th className="p-3.5">Satuan Pendidikan</th>
                 <th className="p-3.5">NPSN / NIB</th>
-                <th className="p-3.5">Cabang / PCM</th>
+                <th className="p-3.5">Majelis Cabang</th>
                 <th className="p-3.5">Jenjang</th>
                 <th className="p-3.5">Akreditasi</th>
                 <th className="p-3.5 text-center">Rekap Siswa</th>
@@ -743,7 +743,7 @@ export const SekolahModule: React.FC = () => {
 
                   <div>
                     <label className="font-semibold text-slate-700 dark:text-slate-300 block mb-1">
-                      Cabang / PCM Naungan {currentUser?.role === 'Cabang' && <span className="text-xs text-emerald-600 font-normal">(Wilayah Binaan Anda)</span>}
+                      Majelis Cabang Naungan {currentUser?.role === 'Cabang' && <span className="text-xs text-emerald-600 font-normal">(Wilayah Binaan Anda)</span>}
                     </label>
                     <select
                       value={formData.cabangId || ''}

@@ -78,14 +78,14 @@ export const LoginView: React.FC = () => {
           <div className="border-b border-teal-700/50 pb-3 flex items-center justify-between relative z-10">
             <div>
               <h2 className="text-base font-bold text-white tracking-wide">Masuk ke Portal SIM</h2>
-              <p className="text-xs text-teal-100/80">Pilih akses Sekolah, Cabang PCM, atau Administrator</p>
+              <p className="text-xs text-teal-100/80">Pilih akses Sekolah, Majelis Cabang, atau Administrator</p>
             </div>
             <div className="p-2 rounded-xl bg-white/10 border border-white/15 text-emerald-300 backdrop-blur-xs">
               <ShieldCheck className="w-5 h-5" />
             </div>
           </div>
 
-          {/* Type Selector Buttons: 3 Column for Sekolah, Cabang/PCM, Super Admin */}
+          {/* Type Selector Buttons: 3 Column for Sekolah, Majelis Cabang, Super Admin */}
           <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-emerald-950/70 border border-teal-700/60 text-xs relative z-10">
             <button
               type="button"
@@ -110,7 +110,7 @@ export const LoginView: React.FC = () => {
               }`}
             >
               <Building className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Cabang / PCM</span>
+              <span className="text-[11px]">Majelis Cabang</span>
             </button>
 
             <button
@@ -140,7 +140,7 @@ export const LoginView: React.FC = () => {
                 {activeLoginType === 'sekolah'
                   ? 'NPSN / Username Sekolah'
                   : activeLoginType === 'cabang'
-                  ? 'Username / Kode PCM'
+                  ? 'Username / Kode Majelis Cabang'
                   : 'Username Super Admin'}
               </label>
 
@@ -161,7 +161,7 @@ export const LoginView: React.FC = () => {
                     activeLoginType === 'sekolah'
                       ? 'Masukkan NPSN / Username...'
                       : activeLoginType === 'cabang'
-                      ? 'Masukkan Kode / Username PCM...'
+                      ? 'Masukkan Kode / Username Majelis Cabang...'
                       : 'Masukkan Username Admin...'
                   }
                   className="w-full pl-10 pr-4 py-2.5 bg-emerald-950/60 border border-teal-600/40 rounded-xl text-white outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-400/30 transition-all placeholder:text-teal-200/50 font-mono"

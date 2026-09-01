@@ -54,7 +54,7 @@ export const LaporanAnalisisModule: React.FC = () => {
       return {
         NPSN: s.npsn,
         'Satuan Pendidikan': s.name,
-        'Cabang / PCM': c?.name || '-',
+        'Majelis Cabang': c?.name || '-',
         Jenjang: s.level,
         Status: s.status,
         Akreditasi: s.accreditation,
