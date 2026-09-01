@@ -123,12 +123,8 @@ export const SekolahModule: React.FC = () => {
   });
 
   const activeSchools = useMemo(() => {
-    let list = filteredSekolahList.filter((s) => !s.isDeleted);
-    if (currentUser?.role === 'Cabang' && currentUser.cabangId) {
-      list = list.filter((s) => s.cabangId === currentUser.cabangId);
-    }
-    return list;
-  }, [filteredSekolahList, currentUser]);
+    return filteredSekolahList.filter((s) => !s.isDeleted);
+  }, [filteredSekolahList]);
 
   // Helper for computing live automatic recap for any school
   const getSchoolRecap = (schoolId: string) => {

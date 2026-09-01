@@ -25,7 +25,6 @@ import {
   LogIn,
   Eye,
   EyeOff,
-  RefreshCw,
   LayoutGrid,
   Table as TableIcon,
 } from 'lucide-react';
@@ -56,7 +55,6 @@ export const CabangModule: React.FC = () => {
     updateCabang,
     deleteCabang,
     importCabangBatch,
-    syncMasterCabang,
     showToast,
   } = useData();
   const { currentUser, quickLogin } = useAuth();
@@ -68,7 +66,6 @@ export const CabangModule: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Cabang | null>(null);
-  const [isSyncing, setIsSyncing] = useState(false);
 
   // Import State
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -114,17 +111,6 @@ export const CabangModule: React.FC = () => {
   const handleTestSession = (c: Cabang) => {
     quickLogin('Cabang', `Operator ${c.name}`, c.id);
     showToast(`Beralih ke Sesi ${c.name}`, 'success');
-  };
-
-  const handleSyncCabang = async () => {
-    try {
-      setIsSyncing(true);
-      await syncMasterCabang();
-    } catch (err: any) {
-      showToast(err?.message || 'Gagal sinkron data cabang', 'error');
-    } finally {
-      setIsSyncing(false);
-    }
   };
 
   const handleOpenAdd = () => {
@@ -458,20 +444,6 @@ export const CabangModule: React.FC = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Sinkronkan Master PCM Klaten */}
-          {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
-            <button
-              type="button"
-              onClick={handleSyncCabang}
-              disabled={isSyncing}
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold transition-all shadow-xs cursor-pointer disabled:opacity-60"
-              title="Sinkronkan 26 Data Master PCM Klaten lengkap (23 PCM tambahan + Cabang Daerah Kota)"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-              <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan 26 PCM Klaten'}</span>
-            </button>
-          )}
-
           {/* Ekspor Excel */}
           <button
             type="button"

@@ -25,9 +25,11 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     email: 'admin@dikdasmenklaten.org',
     name: 'Administrator (Super Admin)',
     role: 'Super Admin',
+    originalRole: 'Super Admin',
+    isSimulated: false,
     createdAt: new Date().toISOString(),
     isActive: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: DEFAULT_SCHOOL_LOGO,
     phone: '081234567890',
   },
   'Admin': {
@@ -35,9 +37,11 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     email: 'staf@dikdasmenklaten.org',
     name: 'Staf Sekretariat Majelis',
     role: 'Admin',
+    originalRole: 'Admin',
+    isSimulated: false,
     createdAt: new Date().toISOString(),
     isActive: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: DEFAULT_SCHOOL_LOGO,
     phone: '081298765432',
   },
   'Cabang': {
@@ -45,9 +49,11 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     email: 'pcm@dikdasmenklaten.org',
     name: 'Operator Cabang / PCM',
     role: 'Cabang',
+    originalRole: 'Cabang',
+    isSimulated: false,
     createdAt: new Date().toISOString(),
     isActive: true,
-    avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80',
+    avatarUrl: DEFAULT_SCHOOL_LOGO,
     phone: '0272-321000',
   },
   'Sekolah': {
@@ -55,6 +61,8 @@ const DEMO_USERS: Record<UserRole, UserProfile> = {
     email: 'operator@sekolah.dikdasmenklaten.org',
     name: 'Operator Satuan Pendidikan',
     role: 'Sekolah',
+    originalRole: 'Sekolah',
+    isSimulated: false,
     createdAt: new Date().toISOString(),
     isActive: true,
     avatarUrl: DEFAULT_SCHOOL_LOGO,
@@ -289,6 +297,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: matchedSchool.email || `${matchedSchool.npsn}@sekolah.dikdasmenklaten.org`,
           name: `Operator ${matchedSchool.name}`,
           role: 'Sekolah',
+          originalRole: 'Sekolah',
+          isSimulated: false,
           sekolahId: matchedSchool.id,
           cabangId: matchedSchool.cabangId || 'cabang-klaten-kota',
           createdAt: new Date().toISOString(),
@@ -348,6 +358,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: matchedCabang.email || `pcm@${matchedCabang.code.toLowerCase()}.dikdasmen.org`,
           name: `Operator ${matchedCabang.name}`,
           role: 'Cabang',
+          originalRole: 'Cabang',
+          isSimulated: false,
           cabangId: matchedCabang.id,
           createdAt: new Date().toISOString(),
           isActive: true,
@@ -387,6 +399,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const adminUser: UserProfile = {
             ...DEMO_USERS['Admin'],
             name: 'Staf Sekretariat Majelis',
+            originalRole: 'Admin',
+            isSimulated: false,
           };
           setCurrentUser(adminUser);
           try {
@@ -401,6 +415,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: identifier.includes('@') ? identifier : 'admin@dikdasmenklaten.org',
           name: 'Administrator (Super Admin)',
           role: 'Super Admin',
+          originalRole: 'Super Admin',
+          isSimulated: false,
           createdAt: new Date().toISOString(),
           isActive: true,
           avatarUrl: DEFAULT_SCHOOL_LOGO,
@@ -426,7 +442,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (password !== 'adminn' && password !== 'admin') {
           throw new Error('Kata sandi Administrator salah.');
         }
-        const user = isStafAdmin(identifier) ? DEMO_USERS['Admin'] : DEMO_USERS['Super Admin'];
+        const user = isStafAdmin(identifier) ? { ...DEMO_USERS['Admin'], originalRole: 'Admin', isSimulated: false } : { ...DEMO_USERS['Super Admin'], originalRole: 'Super Admin', isSimulated: false };
         setCurrentUser(user);
         setIsLoading(false);
         return true;
@@ -443,6 +459,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: matchedCabang.email || `pcm@${matchedCabang.code.toLowerCase()}.dikdasmen.org`,
           name: `Operator ${matchedCabang.name}`,
           role: 'Cabang',
+          originalRole: 'Cabang',
+          isSimulated: false,
           cabangId: matchedCabang.id,
           createdAt: new Date().toISOString(),
           isActive: true,
@@ -464,6 +482,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: matchedSchool.email || `${matchedSchool.npsn}@sekolah.dikdasmenklaten.org`,
           name: `Operator ${matchedSchool.name}`,
           role: 'Sekolah',
+          originalRole: 'Sekolah',
+          isSimulated: false,
           sekolahId: matchedSchool.id,
           cabangId: matchedSchool.cabangId || 'cabang-klaten-kota',
           createdAt: new Date().toISOString(),
@@ -483,12 +503,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const quickLogin = (role: UserRole, customName?: string, cabangId?: string, sekolahId?: string) => {
-    const base = { ...DEMO_USERS[role] };
+    // Only allow simulation / role switching if the initiator is Super Admin
+    const isSuperAdminInitiator = currentUser?.originalRole === 'Super Admin' || currentUser?.role === 'Super Admin';
+    if (!isSuperAdminInitiator) {
+      console.warn('Simulasi peran hanya diizinkan untuk sesi Super Admin.');
+      return;
+    }
+
+    if (role === 'Super Admin') {
+      const base = { ...DEMO_USERS['Super Admin'], originalRole: 'Super Admin' as UserRole, isSimulated: false };
+      setCurrentUser(base);
+      logActivity(base.email, 'SWITCH_ROLE', 'Kembali ke mode Super Admin penuh.', base.name, base.role);
+      return;
+    }
+
+    const base = {
+      ...DEMO_USERS[role],
+      originalRole: 'Super Admin' as UserRole,
+      isSimulated: true,
+    };
     if (customName) base.name = customName;
     if (cabangId) base.cabangId = cabangId;
     if (sekolahId) base.sekolahId = sekolahId;
     setCurrentUser(base);
-    logActivity(base.email, 'SWITCH_ROLE', `Beralih peran sebagai ${role}.`, base.name, base.role);
+    logActivity(base.email, 'SWITCH_ROLE', `Super Admin mensimulasikan mode view ${role} (${customName || role}).`, base.name, base.role);
   };
 
   const logout = () => {

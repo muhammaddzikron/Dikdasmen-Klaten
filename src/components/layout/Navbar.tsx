@@ -14,6 +14,7 @@ import {
   CheckCheck,
   Sparkles,
   ChevronRight,
+  ArrowLeftRight,
   X,
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -43,6 +44,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  const isSuperAdminSession = currentUser?.originalRole === 'Super Admin' || currentUser?.role === 'Super Admin';
+  const isSimulating = Boolean(isSuperAdminSession && (currentUser?.role !== 'Super Admin' || currentUser?.isSimulated));
 
   const unreadNotifs = notifikasiList.filter((n) => !n.isRead);
   const registeredSchools = activeSekolahList.length > 0 ? activeSekolahList : sekolahList.filter((s) => !s.isDeleted);
@@ -174,9 +178,28 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
         </div>
       </div>
 
-      {/* Center: Global Scope & Active Entity Selectors (Only shown for Super Admin) */}
+      {/* Center: Global Scope & Active Entity Selectors (Super Admin) OR Simulation Banner */}
       <div className="hidden lg:flex items-center gap-2 text-xs">
-        {currentUser?.role === 'Super Admin' && (
+        {isSimulating ? (
+          /* Simulation Mode Indicator for Super Admin testing other roles */
+          <div className="flex items-center gap-2 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700/60 px-3 py-1 rounded-lg text-xs shadow-xs">
+            <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-300 font-semibold">
+              <Sparkles className="w-3.5 h-3.5 text-amber-600 animate-pulse" />
+              <span>Mode View:</span>
+              <span className="font-bold text-amber-950 dark:text-amber-100">{currentUser?.name}</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded-sm bg-amber-200 dark:bg-amber-900 text-amber-900 dark:text-amber-200 font-bold uppercase">{currentUser?.role}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRoleSwitch('Super Admin')}
+              className="ml-2 px-2.5 py-1 rounded-md bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white font-bold text-[11px] transition-all shadow-xs flex items-center gap-1.5 cursor-pointer"
+              title="Kembali ke peran Super Admin penuh"
+            >
+              <ArrowLeftRight className="w-3 h-3" />
+              <span>Kembali ke Super Admin</span>
+            </button>
+          </div>
+        ) : currentUser?.role === 'Super Admin' ? (
           /* Super Admin View: Region-wide scope selectors */
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/80 px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-700">
@@ -220,14 +243,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
               </select>
             </div>
           </div>
-        )}
+        ) : null}
       </div>
 
       {/* Right Controls */}
       <div className="flex items-center gap-2 sm:gap-3">
-        {/* Role Badge / Switcher - Role Switch dropdown is ONLY available for Super Admin */}
+        {/* Role Badge / Switcher - Role Switch dropdown is ONLY available for Super Admin Session */}
         <div className="relative">
-          {currentUser?.role === 'Super Admin' ? (
+          {isSuperAdminSession ? (
             <button
               id="btn-role-switcher"
               onClick={() => {
@@ -235,13 +258,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
                 setShowNotifMenu(false);
                 setShowUserMenu(false);
               }}
-              className={`flex items-center gap-1.5 px-2 py-1 rounded-md border text-[11px] font-bold shadow-xs transition-all cursor-pointer ${getRoleBadgeClass(
+              className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md border text-[11px] font-bold shadow-xs transition-all cursor-pointer ${getRoleBadgeClass(
                 currentUser?.role
               )}`}
-              title="Super Admin: Klik untuk beralih mode simulasi / role"
+              title={isSimulating ? "Klik untuk ganti simulasi atau kembali ke Super Admin" : "Super Admin: Klik untuk beralih mode simulasi / role"}
             >
               <Shield className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{currentUser?.role || 'Guest'}</span>
+              <span className="hidden sm:inline">
+                {isSimulating ? `View: ${currentUser?.role}` : (currentUser?.role || 'Guest')}
+              </span>
               <ChevronDown className="w-3 h-3 opacity-70" />
             </button>
           ) : (
@@ -255,7 +280,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
             </div>
           )}
 
-          {showRoleMenu && (
+          {isSuperAdminSession && showRoleMenu && (
             <div
               id="dropdown-role-menu"
               className="absolute right-0 mt-2 w-72 max-h-[85vh] overflow-y-auto rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 custom-scrollbar"

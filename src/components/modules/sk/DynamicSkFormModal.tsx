@@ -36,6 +36,7 @@ import {
   DEFAULT_MASTER_SUB_JENIS_SK,
   generateSkTitle,
   generateFormattedSkNumber,
+  getDocumentRequirements,
 } from '../../../lib/masterSkDefaults';
 import { uploadFileToStorage } from '../../../lib/storageService';
 
@@ -151,13 +152,10 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
   // Determine recipient category
   const isSchoolRecipient = currentMasterJenis.recipientType === 'SATUAN PENDIDIKAN';
 
-  // Active Document Requirements
+  // Active Document Requirements based on submission type (Pengajuan Baru: Ijazah & NBM; Perpanjangan: SK Lama)
   const activeRequirements = useMemo(() => {
-    if (currentSubJenis?.requirements && currentSubJenis.requirements.length > 0) {
-      return currentSubJenis.requirements;
-    }
-    return currentMasterJenis.defaultRequirements || [];
-  }, [currentSubJenis, currentMasterJenis]);
+    return getDocumentRequirements(submissionType);
+  }, [submissionType]);
 
   // Auto initialize default school from current user
   useEffect(() => {
@@ -556,7 +554,6 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
                   <option value="SK Guru (Pendidik)">SK Guru (Pendidik)</option>
                   <option value="SK Tenaga Kependidikan">SK Tenaga Kependidikan</option>
                   <option value="SK Kepala Sekolah">SK Kepala Sekolah</option>
-                  <option value="SK Pendirian / Operasional">SK Pendirian / Operasional</option>
                 </select>
                 <p className="text-[11px] text-slate-500 mt-1">
                   Tipe Penerima: <strong className="text-emerald-600 dark:text-emerald-400">{currentMasterJenis.recipientType}</strong>

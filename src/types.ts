@@ -14,6 +14,8 @@ export interface UserProfile {
   email: string;
   name: string;
   role: UserRole;
+  originalRole?: UserRole;
+  isSimulated?: boolean;
   cabangId?: string;
   sekolahId?: string;
   avatarUrl?: string;
@@ -213,15 +215,14 @@ export interface Siswa {
   createdAt?: string;
 }
 
-export type SkStatus = 'Terbit' | 'Belum Terbit' | 'Ditolak';
+export type SkStatus = 'Terbit' | 'Belum Terbit' | 'Diproses' | 'Terverifikasi' | 'Ditolak';
 export type SubmissionType = 'Baru' | 'Perpanjangan' | 'Perubahan' | 'Revisi';
 export type SkMainType =
   | 'SK Guru (Pendidik)'
   | 'SK Tenaga Kependidikan'
-  | 'SK Kepala Sekolah'
-  | 'SK Pendirian / Operasional';
-export type SkType = SkMainType | 'SK Guru' | 'SK Tendik' | 'SK Kepala Sekolah' | 'SK Pendirian';
-export type SkTypeCode = 'GURU' | 'TENDIK' | 'KS' | 'OPS';
+  | 'SK Kepala Sekolah';
+export type SkType = SkMainType | 'SK Guru' | 'SK Tendik' | 'SK Kepala Sekolah';
+export type SkTypeCode = 'GURU' | 'TENDIK' | 'KS';
 export type RecipientCategory = 'INDIVIDU' | 'SATUAN PENDIDIKAN';
 export type RecipientType = 'INDIVIDU' | 'SATUAN PENDIDIKAN';
 export type RecipientTypeKey = 'PERSON' | 'SCHOOL';

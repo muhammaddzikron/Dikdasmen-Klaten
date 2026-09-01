@@ -342,13 +342,41 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const matched = list.filter((s) => s.id === targetSchoolId);
       list = matched.length > 0 ? matched : (list[0] ? [list[0]] : []);
     } else if (currentUser.role === 'Cabang') {
-      const targetCabangId =
-        selectedCabangId !== 'ALL'
-          ? selectedCabangId
-          : currentUser.cabangId || (cabangList[0] ? cabangList[0].id : '');
-      list = list.filter((s) => s.cabangId === targetCabangId);
+      const userCabangId = currentUser.cabangId || (selectedCabangId !== 'ALL' ? selectedCabangId : '');
+      const currentCabangObj = cabangList.find(
+        (c) =>
+          c.id === userCabangId ||
+          (c.code && c.code.toLowerCase() === userCabangId?.toLowerCase()) ||
+          (c.name && c.name.toLowerCase() === userCabangId?.toLowerCase()) ||
+          (c.username && c.username.toLowerCase() === userCabangId?.toLowerCase())
+      );
+
+      const matchingCabangKeys = new Set<string>();
+      if (userCabangId) matchingCabangKeys.add(userCabangId.toLowerCase().trim());
+      if (currentCabangObj) {
+        if (currentCabangObj.id) matchingCabangKeys.add(currentCabangObj.id.toLowerCase().trim());
+        if (currentCabangObj.code) matchingCabangKeys.add(currentCabangObj.code.toLowerCase().trim());
+        if (currentCabangObj.name) matchingCabangKeys.add(currentCabangObj.name.toLowerCase().trim());
+      }
+
+      list = list.filter((s) => {
+        const sCabangId = String(s.cabangId || '').toLowerCase().trim();
+        const sKecamatan = String(s.kecamatan || '').toLowerCase().trim();
+        if (matchingCabangKeys.has(sCabangId)) return true;
+        if (currentCabangObj?.name) {
+          const cleanCabangName = currentCabangObj.name.toLowerCase().replace(/^(pcm|cabang)\s+/i, '').trim();
+          if (cleanCabangName && (sKecamatan.includes(cleanCabangName) || sCabangId.includes(cleanCabangName))) {
+            return true;
+          }
+        }
+        return false;
+      });
+
       if (selectedSekolahId !== 'ALL') {
-        list = list.filter((s) => s.id === selectedSekolahId);
+        const singleSelected = list.filter((s) => s.id === selectedSekolahId);
+        if (singleSelected.length > 0) {
+          list = singleSelected;
+        }
       }
     } else {
       // Super Admin or Admin

@@ -288,7 +288,6 @@ export const MasterSkManager: React.FC = () => {
               <option value="GURU">SK Guru (Pendidik)</option>
               <option value="TENDIK">SK Tenaga Kependidikan</option>
               <option value="KS">SK Kepala Sekolah</option>
-              <option value="OPS">SK Pendirian / Operasional</option>
             </select>
           )}
 

@@ -28,6 +28,9 @@ import {
   Layers,
   Calendar,
   ChevronRight,
+  RefreshCw,
+  Play,
+  BadgeCheck,
 } from 'lucide-react';
 import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
@@ -65,6 +68,7 @@ export const SkModule: React.FC = () => {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
+  const [isDocViewerOpen, setIsDocViewerOpen] = useState(false);
   const [selectedSk, setSelectedSk] = useState<SuratKeputusan | null>(null);
   const [rejectReason, setRejectReason] = useState('');
 
@@ -72,14 +76,13 @@ export const SkModule: React.FC = () => {
   const displaySkList = useMemo(() => {
     let list = currentUser?.role === 'Sekolah' ? filteredSkList : allSkList;
 
-    // Filter by Type
+    // Filter by Type (Guru, Tendik, Kepala Sekolah)
     if (filterType !== 'ALL') {
       list = list.filter((item) => {
         const itemType = item.type || item.skTypeName || '';
         if (filterType === 'GURU') return itemType.includes('Guru') || itemType.includes('Pendidik');
         if (filterType === 'TENDIK') return itemType.includes('Tenaga Kependidikan') || itemType.includes('Tendik');
         if (filterType === 'KS') return itemType.includes('Kepala Sekolah');
-        if (filterType === 'OPS') return itemType.includes('Pendirian') || itemType.includes('Operasional');
         return itemType === filterType;
       });
     }
@@ -87,8 +90,20 @@ export const SkModule: React.FC = () => {
     // Filter by Status
     if (filterStatus !== 'ALL') {
       list = list.filter((item) => {
-        if (filterStatus === 'Menunggu Verifikasi' || filterStatus === 'Belum Terbit') {
+        if (filterStatus === 'Menunggu Verifikasi') {
           return item.status === 'Belum Terbit' || item.status === 'Menunggu Verifikasi' || !item.status;
+        }
+        if (filterStatus === 'Diproses') {
+          return item.status === 'Diproses' || item.verification_status === 'Diproses';
+        }
+        if (filterStatus === 'Terverifikasi') {
+          return item.status === 'Terverifikasi' || item.verification_status === 'Terverifikasi';
+        }
+        if (filterStatus === 'Terbit') {
+          return item.status === 'Terbit' || item.status === 'Disetujui' || item.status === 'Aktif';
+        }
+        if (filterStatus === 'Ditolak') {
+          return item.status === 'Ditolak';
         }
         return item.status === filterStatus;
       });
@@ -103,7 +118,8 @@ export const SkModule: React.FC = () => {
           item.skNumber?.toLowerCase().includes(q) ||
           item.targetName?.toLowerCase().includes(q) ||
           item.schoolName?.toLowerCase().includes(q) ||
-          item.type?.toLowerCase().includes(q)
+          item.type?.toLowerCase().includes(q) ||
+          item.subType?.toLowerCase().includes(q)
       );
     }
 
@@ -115,28 +131,60 @@ export const SkModule: React.FC = () => {
     const list = currentUser?.role === 'Sekolah' ? filteredSkList : allSkList;
     const total = list.length;
     const pending = list.filter((s) => s.status === 'Belum Terbit' || s.status === 'Menunggu Verifikasi' || !s.status).length;
+    const processing = list.filter((s) => s.status === 'Diproses' || s.verification_status === 'Diproses').length;
+    const verified = list.filter((s) => s.status === 'Terverifikasi' || s.verification_status === 'Terverifikasi').length;
     const approved = list.filter((s) => s.status === 'Terbit' || s.status === 'Disetujui' || s.status === 'Aktif').length;
     const rejected = list.filter((s) => s.status === 'Ditolak').length;
 
     const guruCount = list.filter((s) => (s.type || '').includes('Guru') || (s.type || '').includes('Pendidik')).length;
     const tendikCount = list.filter((s) => (s.type || '').includes('Tenaga Kependidikan') || (s.type || '').includes('Tendik')).length;
     const ksCount = list.filter((s) => (s.type || '').includes('Kepala Sekolah')).length;
-    const opsCount = list.filter((s) => (s.type || '').includes('Pendirian') || (s.type || '').includes('Operasional')).length;
 
-    return { total, pending, approved, rejected, guruCount, tendikCount, ksCount, opsCount };
+    return { total, pending, processing, verified, approved, rejected, guruCount, tendikCount, ksCount };
   }, [allSkList, filteredSkList, currentUser?.role]);
 
-  // Approval Workflow Handlers
+  // Step 1: PROSES Handlers
+  const handleProses = async (sk: SuratKeputusan) => {
+    try {
+      await updateSk(sk.id, {
+        status: 'Diproses',
+        verification_status: 'Diproses',
+        processedAt: new Date().toISOString(),
+        processedBy: currentUser?.name || 'Admin Dikdasmen',
+      });
+      showToast(`SK ${sk.title || sk.skNumber} sekarang berstatus DIPROSES.`, 'info');
+    } catch (err) {
+      showToast('Gagal memproses pengajuan SK.', 'error');
+    }
+  };
+
+  // Step 2: VERIFIKASI Handlers
+  const handleVerifikasi = async (sk: SuratKeputusan) => {
+    try {
+      await updateSk(sk.id, {
+        status: 'Terverifikasi',
+        verification_status: 'Terverifikasi',
+        verifiedAt: new Date().toISOString(),
+        verifiedBy: currentUser?.name || 'Admin Dikdasmen',
+      });
+      showToast(`Berkas SK ${sk.title || sk.skNumber} berhasil DIVERIFIKASI!`, 'success');
+    } catch (err) {
+      showToast('Gagal memverifikasi berkas SK.', 'error');
+    }
+  };
+
+  // Step 3: APPROVE (Terbitkan SK) Handlers
   const handleApprove = async (sk: SuratKeputusan) => {
     try {
       await updateSk(sk.id, {
         status: 'Terbit',
         verification_status: 'Terverifikasi',
         approval_status: 'Disetujui',
-        verifiedAt: new Date().toISOString(),
-        verifiedBy: currentUser?.name || 'Admin Dikdasmen',
+        approvedAt: new Date().toISOString(),
+        approvedBy: currentUser?.name || 'Admin Dikdasmen',
+        publishedAt: new Date().toISOString(),
       });
-      showToast(`SK ${sk.title || sk.skNumber} berhasil diverifikasi dan diterbitkan!`, 'success');
+      showToast(`SK ${sk.title || sk.skNumber} BERHASIL DISETUJUI & DITERBITKAN! SK baru siap diunduh.`, 'success');
     } catch (err) {
       showToast('Gagal memproses persetujuan SK.', 'error');
     }
@@ -177,6 +225,11 @@ export const SkModule: React.FC = () => {
     setIsPrintModalOpen(true);
   };
 
+  const handleOpenDocViewer = (sk: SuratKeputusan) => {
+    setSelectedSk(sk);
+    setIsDocViewerOpen(true);
+  };
+
   const handleDelete = async (sk: SuratKeputusan) => {
     if (window.confirm(`Yakin ingin menghapus SK "${sk.title || sk.skNumber}"?`)) {
       await deleteSk(sk.id);
@@ -191,6 +244,7 @@ export const SkModule: React.FC = () => {
       'Judul SK': item.title || '-',
       'Jenis SK': item.type || item.skTypeName || '-',
       'Sub-Jenis': item.subType || item.skSubTypeName || '-',
+      'Jenis Pengajuan': item.submissionType || 'Baru',
       'Penerima SK': item.targetName || '-',
       'Satuan Pendidikan': item.schoolName || '-',
       'TMT Mulai': item.skStartDate || '-',
@@ -207,6 +261,7 @@ export const SkModule: React.FC = () => {
       'Judul SK': item.title || '-',
       'Jenis SK': item.type || item.skTypeName || '-',
       'Sub-Jenis': item.subType || item.skSubTypeName || '-',
+      'Jenis Pengajuan': item.submissionType || 'Baru',
       'Penerima SK': item.targetName || '-',
       'Satuan Pendidikan': item.schoolName || '-',
       'TMT Mulai': item.skStartDate || '-',
@@ -248,7 +303,7 @@ export const SkModule: React.FC = () => {
               Manajemen Surat Keputusan (SK)
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Pengelolaan & Penerbitan SK Guru, Tendik, Kepala Sekolah, dan Izin Pendirian / Operasional
+              Alur Pengajuan, Verifikasi, dan Penerbitan SK Guru, Tendik, dan Kepala Sekolah
             </p>
           </div>
         </div>
@@ -296,10 +351,10 @@ export const SkModule: React.FC = () => {
         /* RENDER SK LIST TAB */
         <div className="space-y-6">
           {/* STATS SUMMARY WIDGETS */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Pengajuan SK</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Pengajuan</span>
                 <div className="p-2 bg-slate-100 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300">
                   <FileText className="w-4 h-4" />
                 </div>
@@ -310,35 +365,46 @@ export const SkModule: React.FC = () => {
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Menunggu Verifikasi</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Menunggu</span>
                 <div className="p-2 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-lg">
                   <Clock className="w-4 h-4" />
                 </div>
               </div>
               <div className="mt-2 text-2xl font-bold text-amber-600 dark:text-amber-400">{stats.pending}</div>
-              <div className="mt-1 text-[11px] text-slate-500">Perlu ditindaklanjuti</div>
+              <div className="mt-1 text-[11px] text-slate-500">Perlu diproses</div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">SK Terbit & Sah</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Diproses & Verif</span>
+                <div className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-lg">
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="mt-2 text-2xl font-bold text-blue-600 dark:text-blue-400">{stats.processing + stats.verified}</div>
+              <div className="mt-1 text-[11px] text-slate-500">{stats.processing} proses, {stats.verified} verif</div>
+            </div>
+
+            <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">SK Terbit (Sah)</span>
                 <div className="p-2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-lg">
                   <CheckCircle className="w-4 h-4" />
                 </div>
               </div>
               <div className="mt-2 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{stats.approved}</div>
-              <div className="mt-1 text-[11px] text-slate-500">Aktif beroperasi/tugas</div>
+              <div className="mt-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">Siap diunduh</div>
             </div>
 
             <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-xs">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Ditolak / Revisi</span>
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Ditolak</span>
                 <div className="p-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg">
                   <XCircle className="w-4 h-4" />
                 </div>
               </div>
               <div className="mt-2 text-2xl font-bold text-red-600 dark:text-red-400">{stats.rejected}</div>
-              <div className="mt-1 text-[11px] text-slate-500">Berkas perlu diperbaiki</div>
+              <div className="mt-1 text-[11px] text-slate-500">Perlu revisi pemohon</div>
             </div>
           </div>
 
@@ -387,16 +453,6 @@ export const SkModule: React.FC = () => {
                 >
                   SK Kepala Sekolah ({stats.ksCount})
                 </button>
-                <button
-                  onClick={() => setFilterType('OPS')}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
-                    filterType === 'OPS'
-                      ? 'bg-amber-600 text-white'
-                      : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                  }`}
-                >
-                  SK Pendirian / Operasional ({stats.opsCount})
-                </button>
               </div>
 
               {/* Status Filter */}
@@ -406,9 +462,11 @@ export const SkModule: React.FC = () => {
                   onChange={(e) => setFilterStatus(e.target.value)}
                   className="text-xs px-3 py-1.5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-emerald-500"
                 >
-                  <option value="ALL">Semua Status</option>
-                  <option value="Menunggu Verifikasi">Menunggu Verifikasi / Belum Terbit</option>
-                  <option value="Terbit">Terbit / Disetujui</option>
+                  <option value="ALL">Semua Status Workflow</option>
+                  <option value="Menunggu Verifikasi">Menunggu Verifikasi</option>
+                  <option value="Diproses">Sedang Diproses</option>
+                  <option value="Terverifikasi">Terverifikasi</option>
+                  <option value="Terbit">Terbit / Disetujui (Approve)</option>
                   <option value="Ditolak">Ditolak</option>
                 </select>
 
@@ -438,7 +496,7 @@ export const SkModule: React.FC = () => {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari berdasarkan Nomor SK, Judul SK, Nama Penerima, atau Nama Sekolah..."
+                placeholder="Cari berdasarkan Nomor SK, Judul SK, Nama Penerima, NBM, atau Nama Sekolah..."
                 className="w-full text-xs pl-9 pr-9 py-2.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
               />
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -462,26 +520,28 @@ export const SkModule: React.FC = () => {
                 <thead className="bg-slate-50 dark:bg-slate-900/80 text-slate-700 dark:text-slate-300 font-bold border-b border-slate-200 dark:border-slate-700 uppercase tracking-wider">
                   <tr>
                     <th className="px-4 py-3.5 w-12 text-center">No</th>
-                    <th className="px-4 py-3.5">Nomor & Tanggal SK</th>
+                    <th className="px-4 py-3.5">Nomor & Tgl SK</th>
                     <th className="px-4 py-3.5">Judul & Sub-Jenis SK</th>
-                    <th className="px-4 py-3.5">Jenis SK</th>
+                    <th className="px-4 py-3.5">Jenis & Pengajuan</th>
                     <th className="px-4 py-3.5">Penerima SK</th>
                     <th className="px-4 py-3.5">Satuan Pendidikan</th>
-                    <th className="px-4 py-3.5">Masa Berlaku (TMT)</th>
-                    <th className="px-4 py-3.5">Berkas Persyaratan</th>
-                    <th className="px-4 py-3.5 text-center">Status</th>
-                    <th className="px-4 py-3.5 text-right">Aksi</th>
+                    <th className="px-4 py-3.5">Masa Berlaku</th>
+                    <th className="px-4 py-3.5 text-center">Berkas Syarat</th>
+                    <th className="px-4 py-3.5 text-center">Status Workflow</th>
+                    <th className="px-4 py-3.5 text-center">Aksi / Alur Persetujuan</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                   {displaySkList.length > 0 ? (
                     displaySkList.map((sk, idx) => {
                       const isApproved = sk.status === 'Terbit' || sk.status === 'Disetujui' || sk.status === 'Aktif';
+                      const isVerified = sk.status === 'Terverifikasi' || sk.verification_status === 'Terverifikasi';
+                      const isProcessing = sk.status === 'Diproses' || sk.verification_status === 'Diproses';
                       const isRejected = sk.status === 'Ditolak';
-                      const isPending = !isApproved && !isRejected;
+                      const isPending = !isApproved && !isVerified && !isProcessing && !isRejected;
 
                       const docsCount = sk.uploaded_documents?.length || 0;
-                      const isSchoolTarget = sk.recipient_type === 'SATUAN PENDIDIKAN' || sk.type?.includes('Pendirian');
+                      const subTypeBadge = sk.submissionType || 'Baru';
 
                       return (
                         <tr key={sk.id || idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/40 transition-colors">
@@ -501,29 +561,38 @@ export const SkModule: React.FC = () => {
                             <div className="font-bold text-slate-900 dark:text-white line-clamp-1">
                               {sk.title || 'SURAT KEPUTUSAN'}
                             </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5">
+                            <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold mt-0.5">
                               {sk.subType || sk.skSubTypeName || 'Standar Dikdasmen'}
                             </div>
                           </td>
                           <td className="px-4 py-3.5">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                              (sk.type || '').includes('Guru')
-                                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                                : (sk.type || '').includes('Tenaga Kependidikan') || (sk.type || '').includes('Tendik')
-                                ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
-                                : (sk.type || '').includes('Kepala Sekolah')
-                                ? 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
-                                : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
-                            }`}>
-                              {sk.type || sk.skTypeName || 'SK Guru'}
-                            </span>
+                            <div className="space-y-1">
+                              <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                                (sk.type || '').includes('Guru')
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : (sk.type || '').includes('Tenaga Kependidikan') || (sk.type || '').includes('Tendik')
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300'
+                                  : 'bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300'
+                              }`}>
+                                {sk.type || sk.skTypeName || 'SK Guru'}
+                              </span>
+                              <div>
+                                <span className={`inline-block px-1.5 py-0.2 text-[9px] font-medium rounded ${
+                                  subTypeBadge === 'Baru'
+                                    ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                    : 'bg-amber-50 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                }`}>
+                                  {subTypeBadge === 'Baru' ? 'Pengajuan Baru' : 'Perpanjangan SK'}
+                                </span>
+                              </div>
+                            </div>
                           </td>
                           <td className="px-4 py-3.5">
                             <div className="font-semibold text-slate-900 dark:text-white">
-                              {sk.targetName || '-'}
+                              {sk.targetName || sk.recipient_data?.name || '-'}
                             </div>
                             <div className="text-[10px] text-slate-500">
-                              {isSchoolTarget ? 'Satuan Pendidikan' : `NBM: ${sk.recipient_data?.nbm || '-'}`}
+                              NBM: {sk.recipient_data?.nbm || '-'}
                             </div>
                           </td>
                           <td className="px-4 py-3.5 text-slate-700 dark:text-slate-300 font-medium">
@@ -533,68 +602,123 @@ export const SkModule: React.FC = () => {
                             <div>{sk.skStartDate || sk.start_date || '-'}</div>
                             <div className="text-[10px] text-slate-500">s/d {sk.skEndDate || sk.end_date || 'Permanen'}</div>
                           </td>
-                          <td className="px-4 py-3.5">
+                          <td className="px-4 py-3.5 text-center">
                             {docsCount > 0 ? (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium text-[11px]">
-                                <Paperclip className="w-3 h-3 text-emerald-600" />
+                              <button
+                                onClick={() => handleOpenDocViewer(sk)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition-colors"
+                                title="Lihat Berkas Persyaratan (Ijazah & NBM / SK Lama)"
+                              >
+                                <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>{docsCount} Berkas</span>
-                              </span>
+                              </button>
                             ) : (
                               <span className="text-[10px] text-slate-400 italic">Belum Ada</span>
                             )}
                           </td>
                           <td className="px-4 py-3.5 text-center">
                             {isApproved && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                                <CheckCircle className="w-3 h-3" />
-                                <span>Terbit</span>
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 shadow-2xs">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Terbit (Sah)</span>
+                              </span>
+                            )}
+                            {isVerified && !isApproved && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950 dark:text-indigo-300">
+                                <BadgeCheck className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Terverifikasi</span>
+                              </span>
+                            )}
+                            {isProcessing && !isVerified && !isApproved && (
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300">
+                                <RefreshCw className="w-3.5 h-3.5 text-blue-600 animate-spin" />
+                                <span>Diproses</span>
                               </span>
                             )}
                             {isPending && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                                <Clock className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
                                 <span>Menunggu Verifikasi</span>
                               </span>
                             )}
                             {isRejected && (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
-                                <XCircle className="w-3 h-3" />
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300">
+                                <XCircle className="w-3.5 h-3.5 text-red-600" />
                                 <span>Ditolak</span>
                               </span>
                             )}
                           </td>
-                          <td className="px-4 py-3.5 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              {/* Print / Preview Button */}
-                              <button
-                                onClick={() => handleOpenPrintPreview(sk)}
-                                className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                                title="Pratinjau Naskah SK Resmi & Cetak PDF"
-                              >
-                                <Printer className="w-4 h-4" />
-                              </button>
-
-                              {/* Approval Buttons for Admin */}
-                              {isAdmin && isPending && (
-                                <>
-                                  <button
-                                    onClick={() => handleApprove(sk)}
-                                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 rounded-lg transition-colors"
-                                    title="Setujui & Terbitkan SK"
-                                  >
-                                    <Check className="w-4 h-4" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleOpenReject(sk)}
-                                    className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-                                    title="Tolak Pengajuan SK"
-                                  >
-                                    <X className="w-4 h-4" />
-                                  </button>
-                                </>
+                          <td className="px-4 py-3.5 text-center">
+                            <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                              {/* DOWNLOAD / PRINT SK BUTTON: Prominently available when Approved */}
+                              {isApproved ? (
+                                <button
+                                  onClick={() => handleOpenPrintPreview(sk)}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold shadow-xs transition-colors"
+                                  title="Unduh & Cetak Surat Keputusan Resmi"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download SK</span>
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => handleOpenPrintPreview(sk)}
+                                  className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                  title="Pratinjau Format Naskah SK"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
                               )}
 
-                              {/* Delete Button */}
+                              {/* ADMIN WORKFLOW ACTIONS: PROSES -> VERIFIKASI -> APPROVE */}
+                              {isAdmin && !isApproved && !isRejected && (
+                                <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700/60 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                                  {/* Step 1: Proses */}
+                                  {isPending && (
+                                    <button
+                                      onClick={() => handleProses(sk)}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-bold transition-colors"
+                                      title="Langkah 1: Mulai Proses Pengajuan SK"
+                                    >
+                                      <Play className="w-3 h-3 fill-current" />
+                                      <span>Proses</span>
+                                    </button>
+                                  )}
+
+                                  {/* Step 2: Verifikasi */}
+                                  {(isPending || isProcessing) && (
+                                    <button
+                                      onClick={() => handleVerifikasi(sk)}
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded text-[10px] font-bold transition-colors"
+                                      title="Langkah 2: Verifikasi Kelayakan & Berkas Dokumen"
+                                    >
+                                      <BadgeCheck className="w-3 h-3" />
+                                      <span>Verifikasi</span>
+                                    </button>
+                                  )}
+
+                                  {/* Step 3: Approve / Terbitkan */}
+                                  <button
+                                    onClick={() => handleApprove(sk)}
+                                    className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded text-[10px] font-bold transition-colors"
+                                    title="Langkah 3: Setujui & Terbitkan SK Resmi (Approve)"
+                                  >
+                                    <Check className="w-3 h-3" />
+                                    <span>Approve</span>
+                                  </button>
+
+                                  {/* Reject Button */}
+                                  <button
+                                    onClick={() => handleOpenReject(sk)}
+                                    className="p-1 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded transition-colors"
+                                    title="Tolak Pengajuan SK"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Delete Button for Admin */}
                               {isAdmin && (
                                 <button
                                   onClick={() => handleDelete(sk)}
@@ -638,7 +762,7 @@ export const SkModule: React.FC = () => {
         onClose={() => setIsSubmitModalOpen(false)}
       />
 
-      {/* SK OFFICIAL PRINT PREVIEW MODAL */}
+      {/* SK OFFICIAL PRINT & DOWNLOAD PREVIEW MODAL */}
       <SkPrintPreviewModal
         isOpen={isPrintModalOpen}
         onClose={() => setIsPrintModalOpen(false)}
@@ -646,6 +770,88 @@ export const SkModule: React.FC = () => {
         masterJenis={masterJenisSkList.find((j) => j.name === selectedSk?.type || j.name === selectedSk?.skTypeName)}
         masterSubJenis={masterSubJenisSkList.find((s) => s.id === selectedSk?.sk_sub_type_id || s.name === selectedSk?.subType)}
       />
+
+      {/* DOCUMENT VIEWER MODAL */}
+      {isDocViewerOpen && selectedSk && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
+              <div className="flex items-center gap-2 text-emerald-600">
+                <Paperclip className="w-5 h-5" />
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Berkas Persyaratan SK
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsDocViewerOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                {selectedSk.title || selectedSk.skNumber}
+              </p>
+              <p className="text-[11px] text-slate-500">
+                Penerima: {selectedSk.targetName} | {selectedSk.schoolName}
+              </p>
+              <p className="text-[11px] text-emerald-600 font-semibold">
+                Jenis Pengajuan: {selectedSk.submissionType === 'Baru' ? 'Pengajuan Baru (Ijazah Terakhir & NBM)' : 'Perpanjangan SK (SK Lama)'}
+              </p>
+            </div>
+
+            <div className="space-y-2.5">
+              {selectedSk.uploaded_documents && selectedSk.uploaded_documents.length > 0 ? (
+                selectedSk.uploaded_documents.map((doc, i) => (
+                  <div
+                    key={doc.requirementId || i}
+                    className="p-3 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg flex items-center justify-between gap-3"
+                  >
+                    <div className="flex items-center gap-2.5 overflow-hidden">
+                      <div className="p-2 bg-emerald-500/10 text-emerald-600 rounded-lg flex-shrink-0">
+                        <FileCheck className="w-4 h-4" />
+                      </div>
+                      <div className="truncate">
+                        <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                          {doc.name || doc.requirementName || 'Berkas Dokumen'}
+                        </p>
+                        <p className="text-[10px] text-slate-500 truncate">
+                          {doc.fileName} {doc.fileSize ? `(${Math.round(doc.fileSize / 1024)} KB)` : ''}
+                        </p>
+                      </div>
+                    </div>
+
+                    <a
+                      href={doc.fileUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex-shrink-0"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>Buka File</span>
+                    </a>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 text-center rounded-lg text-xs text-slate-400">
+                  Tidak ada berkas yang diunggah untuk pengajuan ini.
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => setIsDocViewerOpen(false)}
+                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-semibold"
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* REJECT MODAL */}
       {isRejectModalOpen && (
@@ -664,7 +870,7 @@ export const SkModule: React.FC = () => {
               rows={3}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Contoh: Berkas ijazah belum dilegalisir / data NBM tidak sesuai..."
+              placeholder="Contoh: Berkas ijazah belum terlampir / Nomor NBM tidak sesuai..."
               className="w-full text-xs px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
             />
             <div className="flex justify-end gap-2 pt-2">
