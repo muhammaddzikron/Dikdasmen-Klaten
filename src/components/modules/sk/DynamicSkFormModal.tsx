@@ -251,6 +251,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
       nbm?: string;
       nik?: string;
       nipm?: string;
+      nuptk?: string;
       position?: string;
       subject?: string;
       education?: string;
@@ -272,6 +273,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
         nbm: g.nbm,
         nik: g.nik,
         nipm: g.nipm,
+        nuptk: g.nuptk,
         position: g.position || 'Guru',
         subject: g.subject || 'Guru Kelas',
         education: g.education || 'S1',
@@ -290,6 +292,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
         nbm: t.nbm,
         nik: t.nik,
         nipm: t.nipm,
+        nuptk: (t as any).nuptk || (t as any).npk || '',
         position: t.position || 'Staf Administrasi',
         subject: t.position || 'Tata Usaha',
         education: t.education || 'SMA/SMK Sederajat',
@@ -308,6 +311,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
         nbm: ks.nbm,
         nik: ks.nik,
         nipm: ks.nipm,
+        nuptk: ks.nuptk,
         position: 'Kepala Sekolah',
         subject: 'Manajemen Satuan Pendidikan',
         education: ks.education || 'S1',
@@ -332,7 +336,8 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
         (p) =>
           p.name.toLowerCase().includes(q) ||
           (p.nbm && p.nbm.toLowerCase().includes(q)) ||
-          (p.nik && p.nik.toLowerCase().includes(q)) ||
+          (p.nipm && p.nipm.toLowerCase().includes(q)) ||
+          (p.nuptk && p.nuptk.toLowerCase().includes(q)) ||
           (p.position && p.position.toLowerCase().includes(q))
       );
     }
@@ -350,8 +355,9 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
       ...prev,
       name: person.name,
       nbm: person.nbm || '',
-      nik: person.nik || '',
+      nomorRekomendasiCabang: prev.nomorRekomendasiCabang || '',
       nipm: person.nipm || '',
+      nuptk: person.nuptk || '',
       education: person.education || 'S1',
       studyProgram: person.studyProgram || '',
       position: person.position || '',
@@ -811,27 +817,40 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
 
                   <div>
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      NIK (Nomor Induk Kependudukan)
+                      Nomor SK Rekomendasi Cabang
                     </label>
                     <input
                       type="text"
-                      value={formFieldsData.nik || ''}
-                      onChange={(e) => setFormFieldsData({ ...formFieldsData, nik: e.target.value })}
+                      value={formFieldsData.nomorRekomendasiCabang || formFieldsData.noSkRekomendasiCabang || ''}
+                      onChange={(e) => setFormFieldsData({ ...formFieldsData, nomorRekomendasiCabang: e.target.value, noSkRekomendasiCabang: e.target.value })}
                       className="w-full text-xs px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg font-mono"
-                      placeholder="16 Digit NIK"
+                      placeholder="Contoh: 045/PCM-DEL/IV/2024"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
-                      NIP / NIPM / NUPTK (jika ada)
+                      NIPM
                     </label>
                     <input
                       type="text"
                       value={formFieldsData.nipm || ''}
                       onChange={(e) => setFormFieldsData({ ...formFieldsData, nipm: e.target.value })}
                       className="w-full text-xs px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg font-mono"
-                      placeholder="Nomor Pegawai jika ada"
+                      placeholder="Contoh: M-19850109-077 (jika ada)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
+                      NUPTK / NPK
+                    </label>
+                    <input
+                      type="text"
+                      value={formFieldsData.nuptk || formFieldsData.nuptk_npk || ''}
+                      onChange={(e) => setFormFieldsData({ ...formFieldsData, nuptk: e.target.value, nuptk_npk: e.target.value })}
+                      className="w-full text-xs px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg font-mono"
+                      placeholder="16 digit NUPTK / NPK jika ada"
                     />
                   </div>
 
@@ -882,7 +901,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
                     {formErrors.position && <p className="text-[11px] text-red-500 mt-1">{formErrors.position}</p>}
                   </div>
 
-                  <div>
+                  <div className="md:col-span-2">
                     <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1">
                       Mata Pelajaran / Unit Kerja
                     </label>

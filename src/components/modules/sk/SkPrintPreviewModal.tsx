@@ -54,8 +54,11 @@ export const SkPrintPreviewModal: React.FC<SkPrintPreviewModalProps> = ({
     nama_guru: sk.targetName || recipientData.name || '-',
     nama_personel: sk.targetName || recipientData.name || '-',
     nik: recipientData.nik || '-',
+    nomor_rekomendasi_cabang: recipientData.nomorRekomendasiCabang || recipientData.noSkRekomendasiCabang || recipientData.nomor_rekomendasi_cabang || '-',
     nbm: recipientData.nbm || '-',
+    nipm: recipientData.nipm || recipientData.nip || '-',
     nip: recipientData.nipm || recipientData.nip || '-',
+    nuptk: recipientData.nuptk || recipientData.nuptk_npk || '-',
     tempat_lahir: recipientData.birthPlace || '-',
     tanggal_lahir: formatDateIndo(recipientData.birthDate),
     pendidikan: recipientData.education || '-',
@@ -323,7 +326,7 @@ export const SkPrintPreviewModal: React.FC<SkPrintPreviewModalProps> = ({
                         <table className="w-full mt-2 ml-2 text-xs">
                           <tbody>
                             <tr>
-                              <td className="w-36 font-semibold py-0.5">Nama Lengkap</td>
+                              <td className="w-44 font-semibold py-0.5">Nama Lengkap</td>
                               <td className="w-3">:</td>
                               <td className="font-bold py-0.5">{templateVars.nama_personel}</td>
                             </tr>
@@ -332,10 +335,22 @@ export const SkPrintPreviewModal: React.FC<SkPrintPreviewModalProps> = ({
                               <td>:</td>
                               <td className="font-mono py-0.5">{templateVars.nbm}</td>
                             </tr>
+                            {templateVars.nomor_rekomendasi_cabang !== '-' && (
+                              <tr>
+                                <td className="font-semibold py-0.5">No. SK Rekomendasi Cabang</td>
+                                <td>:</td>
+                                <td className="font-mono py-0.5">{templateVars.nomor_rekomendasi_cabang}</td>
+                              </tr>
+                            )}
                             <tr>
-                              <td className="font-semibold py-0.5">NIP / NIPM / NUPTK</td>
+                              <td className="font-semibold py-0.5">NIPM</td>
                               <td>:</td>
-                              <td className="font-mono py-0.5">{templateVars.nip}</td>
+                              <td className="font-mono py-0.5">{templateVars.nipm}</td>
+                            </tr>
+                            <tr>
+                              <td className="font-semibold py-0.5">NUPTK / NPK</td>
+                              <td>:</td>
+                              <td className="font-mono py-0.5">{templateVars.nuptk}</td>
                             </tr>
                             <tr>
                               <td className="font-semibold py-0.5">Pendidikan Terakhir</td>

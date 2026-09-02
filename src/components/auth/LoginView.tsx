@@ -20,7 +20,7 @@ export const LoginView: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeLoginType, setActiveLoginType] = useState<'sekolah' | 'cabang' | 'admin'>('cabang');
+  const [activeLoginType, setActiveLoginType] = useState<'sekolah' | 'cabang' | 'admin'>('sekolah');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
