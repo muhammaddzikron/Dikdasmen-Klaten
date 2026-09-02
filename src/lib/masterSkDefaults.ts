@@ -51,6 +51,7 @@ export const DEFAULT_MASTER_JENIS_SK: MasterJenisSk[] = [
     defaultRequirements: [
       { id: 'req-ijazah', name: 'Ijazah Terakhir', isRequired: true, description: 'Scan Ijazah Terakhir Asli (PDF/Gambar jelas)' },
       { id: 'req-nbm', name: 'NBM', isRequired: true, description: 'Scan Kartu Tanda Anggota NBM / KTAM' },
+      { id: 'req-rekomendasi-cabang', name: 'Surat Rekomendasi Cabang', isRequired: true, description: 'Scan Surat Rekomendasi dari Pimpinan Cabang / Majelis Cabang Muhammadiyah setempat' },
     ]
   },
   {
@@ -102,6 +103,7 @@ export const DEFAULT_MASTER_JENIS_SK: MasterJenisSk[] = [
     defaultRequirements: [
       { id: 'req-ijazah', name: 'Ijazah Terakhir', isRequired: true, description: 'Scan Ijazah Asli Terakhir (PDF/Gambar jelas)' },
       { id: 'req-nbm', name: 'NBM', isRequired: true, description: 'Scan Kartu Tanda Anggota NBM' },
+      { id: 'req-rekomendasi-cabang', name: 'Surat Rekomendasi Cabang', isRequired: true, description: 'Scan Surat Rekomendasi dari Pimpinan Cabang / Majelis Cabang Muhammadiyah setempat' },
     ]
   },
   {
@@ -153,6 +155,7 @@ export const DEFAULT_MASTER_JENIS_SK: MasterJenisSk[] = [
     defaultRequirements: [
       { id: 'req-ijazah', name: 'Ijazah Terakhir', isRequired: true, description: 'Scan Ijazah S1/S2/S3 Asli' },
       { id: 'req-nbm', name: 'NBM', isRequired: true, description: 'Scan Kartu Anggota NBM Asli' },
+      { id: 'req-rekomendasi-cabang', name: 'Surat Rekomendasi Cabang', isRequired: true, description: 'Scan Surat Rekomendasi dari Pimpinan Cabang / Majelis Cabang Muhammadiyah setempat' },
     ]
   }
 ];
@@ -289,10 +292,16 @@ export function getDocumentRequirements(submissionType: SubmissionType = 'Baru')
         isRequired: true,
         description: 'Scan Surat Keputusan (SK) Lama / Sebelumnya (PDF/Gambar jelas)',
       },
+      {
+        id: 'req-rekomendasi-cabang',
+        name: 'Surat Rekomendasi Cabang',
+        isRequired: true,
+        description: 'Scan Surat Rekomendasi dari Pimpinan Cabang / Majelis Cabang setempat (PDF/Gambar jelas)',
+      },
     ];
   }
 
-  // Default: Pengajuan Baru (hanya Ijazah Terakhir dan NBM)
+  // Default: Pengajuan Baru (Ijazah Terakhir, NBM, dan Surat Rekomendasi Cabang)
   return [
     {
       id: 'req-ijazah',
@@ -305,6 +314,12 @@ export function getDocumentRequirements(submissionType: SubmissionType = 'Baru')
       name: 'NBM',
       isRequired: true,
       description: 'Scan Kartu Tanda Anggota NBM (Nomor Baku Muhammadiyah)',
+    },
+    {
+      id: 'req-rekomendasi-cabang',
+      name: 'Surat Rekomendasi Cabang',
+      isRequired: true,
+      description: 'Scan Surat Rekomendasi dari Pimpinan Cabang / Majelis Cabang setempat (PDF/Gambar jelas)',
     },
   ];
 }

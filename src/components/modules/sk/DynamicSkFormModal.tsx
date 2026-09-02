@@ -152,7 +152,7 @@ export const DynamicSkFormModal: React.FC<DynamicSkFormModalProps> = ({
   // Determine recipient category
   const isSchoolRecipient = currentMasterJenis.recipientType === 'SATUAN PENDIDIKAN';
 
-  // Active Document Requirements based on submission type (Pengajuan Baru: Ijazah & NBM; Perpanjangan: SK Lama)
+  // Active Document Requirements based on submission type (Pengajuan Baru: Ijazah, NBM & Rekomendasi Cabang; Perpanjangan: SK Lama & Rekomendasi Cabang)
   const activeRequirements = useMemo(() => {
     return getDocumentRequirements(submissionType);
   }, [submissionType]);

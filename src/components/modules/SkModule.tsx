@@ -607,7 +607,7 @@ export const SkModule: React.FC = () => {
                               <button
                                 onClick={() => handleOpenDocViewer(sk)}
                                 className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-bold text-[11px] border border-emerald-200 dark:border-emerald-800 transition-colors"
-                                title="Lihat Berkas Persyaratan (Ijazah & NBM / SK Lama)"
+                                title="Lihat Berkas Persyaratan (Ijazah, NBM, SK Lama, Rekomendasi Cabang)"
                               >
                                 <Paperclip className="w-3.5 h-3.5 text-emerald-600" />
                                 <span>{docsCount} Berkas</span>
@@ -798,7 +798,7 @@ export const SkModule: React.FC = () => {
                 Penerima: {selectedSk.targetName} | {selectedSk.schoolName}
               </p>
               <p className="text-[11px] text-emerald-600 font-semibold">
-                Jenis Pengajuan: {selectedSk.submissionType === 'Baru' ? 'Pengajuan Baru (Ijazah Terakhir & NBM)' : 'Perpanjangan SK (SK Lama)'}
+                Jenis Pengajuan: {selectedSk.submissionType === 'Baru' ? 'Pengajuan Baru (Ijazah Terakhir, NBM & Rekomendasi Cabang)' : 'Perpanjangan SK (SK Lama & Rekomendasi Cabang)'}
               </p>
             </div>
 
