@@ -6,17 +6,17 @@ export interface MasterCabangSeed extends Omit<Cabang, 'id'> {
 }
 
 export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
-  // 1. Existing Cabang Daerah Kota (Kept intact)
+  // 1. Existing Cabang Daerah Kota / PDM Klaten
   {
     id: 'cabang-klaten-kota',
-    name: 'Majelis Cabang dan PNF Klaten Kota',
+    name: 'Majelis Dikdasmen dan PNF PDM Klaten',
     code: 'PCM-KLT-01',
     username: 'pcm_klatenkota',
     password: 'cabklatenkota',
     defaultPassword: 'cabklatenkota',
     address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten',
     phone: '0272-321528',
-    email: 'kota@pdmklaten.org',
+    email: 'dikdasmen@pdmklaten.org',
     ketuaName: 'Drs. H. Sukirman, M.Pd.',
     createdAt: '2024-01-01T00:00:00.000Z',
     isDeleted: false,

@@ -257,6 +257,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   let normalizedName = rawName;
                   if (rawName.toLowerCase().includes('dikdasmen daerah kota')) {
                     normalizedName = 'Dikdasmen Daerah Kota';
+                  } else if (rawName.toLowerCase().includes('pdm klaten') || rawName.toLowerCase().includes('dikdasmen dan pnf pdm')) {
+                    normalizedName = 'Majelis Dikdasmen dan PNF PDM Klaten';
                   } else if (/^pcm\s+/i.test(rawName)) {
                     normalizedName = rawName.replace(/^pcm\s+/i, 'Majelis Cabang dan PNF ');
                   }
@@ -411,8 +413,21 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const sKecamatan = String(s.kecamatan || '').toLowerCase().trim();
         if (matchingCabangKeys.has(sCabangId)) return true;
         if (currentCabangObj?.name) {
-          const cleanCabangName = currentCabangObj.name.toLowerCase().replace(/^(pcm|cabang)\s+/i, '').trim();
+          const cleanCabangName = currentCabangObj.name
+            .toLowerCase()
+            .replace(/^(majelis\s+(cabang|dikdasmen)\s+dan\s+pnf|pcm|cabang|pdm)\s+/i, '')
+            .trim();
           if (cleanCabangName && (sKecamatan.includes(cleanCabangName) || sCabangId.includes(cleanCabangName))) {
+            return true;
+          }
+        }
+        if (
+          userCabangId.includes('kota') ||
+          userCabangId.includes('pdm') ||
+          currentCabangObj?.name?.toLowerCase().includes('pdm klaten') ||
+          currentCabangObj?.name?.toLowerCase().includes('klaten kota')
+        ) {
+          if (sCabangId === 'cabang-klaten-kota' || sKecamatan === 'klaten tengah' || sKecamatan === 'klaten kota') {
             return true;
           }
         }

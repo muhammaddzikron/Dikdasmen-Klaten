@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { DataProvider, useData } from './context/DataContext';
 import { ToastContainer } from './components/common/ToastContainer';
@@ -27,6 +27,13 @@ const MainLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Automatically reset to dashboard whenever user logs in or switches profile/role
+  useEffect(() => {
+    if (currentUser) {
+      setActiveTab('dashboard');
+    }
+  }, [currentUser?.id, currentUser?.role]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex flex-col items-center justify-center text-white space-y-4">
@@ -44,32 +51,17 @@ const MainLayout: React.FC = () => {
     switch (activeTab) {
       case 'dashboard':
         if (currentUser.role === 'Sekolah' || (selectedSekolahId && selectedSekolahId !== 'ALL')) {
-          return <SchoolDashboard />;
+          return <SchoolDashboard setActiveTab={setActiveTab} />;
         }
         return <RegionalDashboard setActiveTab={setActiveTab} />;
       case 'sekolah':
-        if (currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin' && currentUser.role !== 'Cabang') {
-          return (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Master Data Sekolah hanya dapat diakses oleh Super Admin, Admin, dan Majelis Cabang.
-              </p>
-            </div>
-          );
-        }
         return <SekolahModule />;
       case 'cabang':
-        if (currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin') {
-          return (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Master Data Majelis dan PNF Cabang hanya dapat diakses dan dikelola oleh Super Admin dan Admin Petugas.
-              </p>
-            </div>
+        if (currentUser.role === 'Cabang' || currentUser.role === 'Sekolah') {
+          return currentUser.role === 'Sekolah' ? (
+            <SchoolDashboard setActiveTab={setActiveTab} />
+          ) : (
+            <RegionalDashboard setActiveTab={setActiveTab} />
           );
         }
         return <CabangModule />;
@@ -88,23 +80,36 @@ const MainLayout: React.FC = () => {
       case 'laporan':
         return <LaporanAnalisisModule />;
       case 'recycle-bin':
+        if (currentUser.role === 'Cabang' || currentUser.role === 'Sekolah') {
+          return currentUser.role === 'Sekolah' ? (
+            <SchoolDashboard setActiveTab={setActiveTab} />
+          ) : (
+            <RegionalDashboard setActiveTab={setActiveTab} />
+          );
+        }
         return <RecycleBinModule />;
       case 'log':
+        if (currentUser.role === 'Cabang' || currentUser.role === 'Sekolah') {
+          return currentUser.role === 'Sekolah' ? (
+            <SchoolDashboard setActiveTab={setActiveTab} />
+          ) : (
+            <RegionalDashboard setActiveTab={setActiveTab} />
+          );
+        }
         return <LogAktivitasModule />;
       case 'settings':
         if (currentUser.role !== 'Super Admin') {
-          return (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
-              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
-              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Dibatasi Khusus Super Admin</h3>
-              <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Pengaturan Sistem & Database hanya dapat dibuka oleh Super Admin. Akun Admin Petugas berwenang mengelola seluruh operasional modul data sekolah, guru, tendik, SK, cabang, dan log, tetapi tidak memiliki izin untuk mengubah pengaturan inti sistem.
-              </p>
-            </div>
+          return currentUser.role === 'Sekolah' ? (
+            <SchoolDashboard setActiveTab={setActiveTab} />
+          ) : (
+            <RegionalDashboard setActiveTab={setActiveTab} />
           );
         }
         return <SettingsModule />;
       default:
+        if (currentUser.role === 'Sekolah' || (selectedSekolahId && selectedSekolahId !== 'ALL')) {
+          return <SchoolDashboard setActiveTab={setActiveTab} />;
+        }
         return <RegionalDashboard setActiveTab={setActiveTab} />;
     }
   };

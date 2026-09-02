@@ -272,7 +272,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
 
               <button
                 type="button"
-                onClick={() => setActiveTab('manajemen-sk')}
+                onClick={() => setActiveTab('sk')}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -563,7 +563,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
               <span>Pendidik dan Tenaga Kependidikan ({currentSchool.name})</span>
             </h3>
             <button
-              onClick={() => setActiveTab('data-guru')}
+              onClick={() => setActiveTab('guru')}
               className="text-xs text-emerald-600 hover:text-emerald-700 font-semibold"
             >
               Kelola di Modul Guru &rarr;
@@ -625,7 +625,7 @@ export const SchoolDashboard: React.FC<SchoolDashboardProps> = ({ setActiveTab }
               <span>Daftar SK Resmi Sekolah</span>
             </h3>
             <button
-              onClick={() => setActiveTab('manajemen-sk')}
+              onClick={() => setActiveTab('sk')}
               className="text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 px-3 py-1.5 rounded-lg shadow-sm"
             >
               + Ajukan SK Baru
