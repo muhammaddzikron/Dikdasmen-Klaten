@@ -260,8 +260,10 @@ export const LogAktivitasModule: React.FC = () => {
           />
           {searchQuery && (
             <button
+              type="button"
               onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title="Bersihkan pencarian"
               aria-label="Bersihkan pencarian"
             >
               <X className="w-3.5 h-3.5" />
