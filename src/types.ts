@@ -20,8 +20,25 @@ export interface UserProfile {
   sekolahId?: string;
   avatarUrl?: string;
   phone?: string;
+  jabatan?: string;
   createdAt: string;
   isActive: boolean;
+}
+
+export interface AdminPetugas {
+  id: string;
+  name: string;
+  username: string;
+  password?: string;
+  email: string;
+  phone?: string;
+  jabatan?: string;
+  role: 'Admin';
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
+  isDeleted?: boolean;
 }
 
 export interface Cabang {

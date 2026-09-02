@@ -123,7 +123,7 @@ export const LoginView: React.FC = () => {
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              <span className="text-[11px]">Super Admin</span>
+              <span className="text-[11px]">Admin / Petugas</span>
             </button>
           </div>
 
@@ -141,7 +141,7 @@ export const LoginView: React.FC = () => {
                   ? 'NPSN / Username Sekolah'
                   : activeLoginType === 'cabang'
                   ? 'Username / Kode Majelis Cabang'
-                  : 'Username Super Admin'}
+                  : 'Username Admin / Petugas'}
               </label>
 
               <div className="relative">
@@ -162,7 +162,7 @@ export const LoginView: React.FC = () => {
                       ? 'Masukkan NPSN / Username...'
                       : activeLoginType === 'cabang'
                       ? 'Masukkan Kode / Username Majelis Cabang...'
-                      : 'Masukkan Username Admin...'
+                      : 'Masukkan Username Admin / Petugas...'
                   }
                   className="w-full pl-10 pr-4 py-2.5 bg-emerald-950/60 border border-teal-600/40 rounded-xl text-white outline-none focus:border-teal-300 focus:ring-2 focus:ring-teal-400/30 transition-all placeholder:text-teal-200/50 font-mono"
                 />

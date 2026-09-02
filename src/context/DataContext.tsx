@@ -17,6 +17,7 @@ import {
   CapabilityCategory,
   MasterJenisSk,
   MasterSubJenisSk,
+  AdminPetugas,
 } from '../types';
 import { DEFAULT_MASTER_JENIS_SK, DEFAULT_MASTER_SUB_JENIS_SK } from '../lib/masterSkDefaults';
 import { MASTER_CABANG_KLATEN, getMasterCabangList } from '../data/masterCabangKlaten';
@@ -33,6 +34,8 @@ import {
   seedInitialData,
   syncMasterSekolahKlaten,
   syncMasterCabangKlaten,
+  syncMasterAdminPetugas,
+  DEFAULT_ADMIN_PETUGAS_LIST,
   getStaticFallbackData,
 } from '../lib/firestoreService';
 import { useAuth } from './AuthContext';
@@ -47,6 +50,7 @@ interface DataContextType {
   // Collections
   cabangList: Cabang[];
   sekolahList: Sekolah[];
+  adminPetugasList: AdminPetugas[];
   guruList: Guru[];
   tendikList: Tendik[];
   kepalaSekolahList: KepalaSekolah[];
@@ -94,6 +98,11 @@ interface DataContextType {
   updateSekolah: (id: string, data: Partial<Sekolah>) => Promise<void>;
   deleteSekolah: (id: string, isPermanent?: boolean) => Promise<void>;
   restoreSekolah: (id: string) => Promise<void>;
+
+  addAdminPetugas: (data: Omit<AdminPetugas, 'id'>) => Promise<string>;
+  updateAdminPetugas: (id: string, data: Partial<AdminPetugas>) => Promise<void>;
+  deleteAdminPetugas: (id: string, isPermanent?: boolean) => Promise<void>;
+  restoreAdminPetugas: (id: string) => Promise<void>;
 
   addCabang: (data: Omit<Cabang, 'id'>) => Promise<string>;
   updateCabang: (id: string, data: Partial<Cabang>) => Promise<void>;
@@ -167,6 +176,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [cabangList, setCabangList] = useState<Cabang[]>([]);
   const [sekolahList, setSekolahList] = useState<Sekolah[]>([]);
+  const [adminPetugasList, setAdminPetugasList] = useState<AdminPetugas[]>([]);
   const [guruList, setGuruList] = useState<Guru[]>([]);
   const [tendikList, setTendikList] = useState<Tendik[]>([]);
   const [kepalaSekolahList, setKepalaSekolahList] = useState<KepalaSekolah[]>([]);
@@ -205,6 +215,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const fallback = getStaticFallbackData();
     setCabangList(fallback.cabangList);
     setSekolahList(fallback.sekolahList);
+    setAdminPetugasList(fallback.adminPetugasList || DEFAULT_ADMIN_PETUGAS_LIST);
     setGuruList(fallback.guruList);
     setTendikList(fallback.tendikList);
     setKepalaSekolahList(fallback.kepalaSekolahList);
@@ -290,6 +301,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       subscribeCollection<Cabang>('cabang', setCabangList, getMasterCabangList());
       subscribeCollection<Sekolah>('sekolah', setSekolahList, getMasterSekolahList());
+      subscribeCollection<AdminPetugas>('adminPetugas', setAdminPetugasList, DEFAULT_ADMIN_PETUGAS_LIST);
       subscribeCollection<Guru>('guru', setGuruList);
       subscribeCollection<Tendik>('tendik', setTendikList);
       subscribeCollection<KepalaSekolah>('kepalaSekolah', setKepalaSekolahList);
@@ -544,6 +556,67 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     await restoreRecord('sekolah', id);
     await logActivity(currentUser?.email || 'System', 'RESTORE_SEKOLAH', `Memulihkan data sekolah ID: ${id}`, currentUser?.name, currentUser?.role);
     showToast('Data sekolah berhasil dipulihkan!', 'success');
+  };
+
+  // Operations: Admin Petugas
+  const addAdminPetugas = async (data: Omit<AdminPetugas, 'id'>) => {
+    const id = await addRecord('adminPetugas', {
+      ...data,
+      role: 'Admin',
+      isActive: data.isActive ?? true,
+      isDeleted: false,
+      createdAt: new Date().toISOString(),
+    });
+    await logActivity(
+      currentUser?.email || 'System',
+      'TAMBAH_ADMIN_PETUGAS',
+      `Menambahkan akun Admin Petugas: ${data.name} (@${data.username}) - ${data.jabatan || 'Staf Pelaksana'}`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast(`Akun Admin Petugas ${data.name} berhasil dibuat!`, 'success');
+    return id;
+  };
+
+  const updateAdminPetugas = async (id: string, data: Partial<AdminPetugas>) => {
+    await updateRecord('adminPetugas', id, { ...data, updatedAt: new Date().toISOString() });
+    await logActivity(
+      currentUser?.email || 'System',
+      'UPDATE_ADMIN_PETUGAS',
+      `Memperbarui akun Admin Petugas ID: ${id} (${data.name || ''})`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast('Data Admin Petugas berhasil diperbarui!', 'success');
+  };
+
+  const deleteAdminPetugas = async (id: string, isPermanent: boolean = false) => {
+    if (isPermanent) {
+      await hardDeleteRecord('adminPetugas', id);
+      showToast('Akun Admin Petugas dihapus permanen!', 'warning');
+    } else {
+      await softDeleteRecord('adminPetugas', id);
+      showToast('Akun Admin Petugas dinonaktifkan/dipindahkan ke Recycle Bin.', 'info');
+    }
+    await logActivity(
+      currentUser?.email || 'System',
+      'HAPUS_ADMIN_PETUGAS',
+      `Menghapus akun Admin Petugas ID: ${id} (${isPermanent ? 'Permanen' : 'Soft-delete'})`,
+      currentUser?.name,
+      currentUser?.role
+    );
+  };
+
+  const restoreAdminPetugas = async (id: string) => {
+    await restoreRecord('adminPetugas', id);
+    await logActivity(
+      currentUser?.email || 'System',
+      'RESTORE_ADMIN_PETUGAS',
+      `Memulihkan akun Admin Petugas ID: ${id}`,
+      currentUser?.name,
+      currentUser?.role
+    );
+    showToast('Akun Admin Petugas berhasil dipulihkan!', 'success');
   };
 
   // Operations: Cabang
@@ -1005,6 +1078,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         cabangList,
         sekolahList,
+        adminPetugasList,
         guruList,
         tendikList,
         kepalaSekolahList,
@@ -1037,6 +1111,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updateSekolah,
         deleteSekolah,
         restoreSekolah,
+        addAdminPetugas,
+        updateAdminPetugas,
+        deleteAdminPetugas,
+        restoreAdminPetugas,
         addCabang,
         updateCabang,
         deleteCabang,

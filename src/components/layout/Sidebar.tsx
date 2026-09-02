@@ -132,11 +132,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
               },
             ]
           : []),
-        {
-          id: 'settings',
-          label: 'Pengaturan & Backup',
-          icon: Settings,
-        },
+        ...(role === 'Super Admin'
+          ? [
+              {
+                id: 'settings',
+                label: 'Pengaturan & Database',
+                icon: Settings,
+              },
+            ]
+          : []),
       ],
     },
   ];

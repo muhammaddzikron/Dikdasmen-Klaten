@@ -61,13 +61,13 @@ const MainLayout: React.FC = () => {
         }
         return <SekolahModule />;
       case 'cabang':
-        if (currentUser.role !== 'Super Admin') {
+        if (currentUser.role !== 'Super Admin' && currentUser.role !== 'Admin') {
           return (
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
               <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
               <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Terbatas</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Modul Master Data Majelis dan PNF Cabang hanya dapat diakses dan dikelola oleh Super Admin.
+                Modul Master Data Majelis dan PNF Cabang hanya dapat diakses dan dikelola oleh Super Admin dan Admin Petugas.
               </p>
             </div>
           );
@@ -92,6 +92,17 @@ const MainLayout: React.FC = () => {
       case 'log':
         return <LogAktivitasModule />;
       case 'settings':
+        if (currentUser.role !== 'Super Admin') {
+          return (
+            <div className="bg-white dark:bg-slate-900 rounded-2xl p-8 border border-slate-200 dark:border-slate-800 text-center space-y-3">
+              <AlertTriangle className="w-8 h-8 text-amber-500 mx-auto" />
+              <h3 className="font-bold text-base text-slate-800 dark:text-slate-200">Akses Dibatasi Khusus Super Admin</h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto">
+                Modul Pengaturan Sistem & Database hanya dapat dibuka oleh Super Admin. Akun Admin Petugas berwenang mengelola seluruh operasional modul data sekolah, guru, tendik, SK, cabang, dan log, tetapi tidak memiliki izin untuk mengubah pengaturan inti sistem.
+              </p>
+            </div>
+          );
+        }
         return <SettingsModule />;
       default:
         return <RegionalDashboard setActiveTab={setActiveTab} />;

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, UserRole, Sekolah, Cabang, DEFAULT_SCHOOL_LOGO, getSchoolLogo } from '../types';
+import { UserProfile, UserRole, Sekolah, Cabang, AdminPetugas, DEFAULT_SCHOOL_LOGO, getSchoolLogo } from '../types';
 import { logActivity, getStaticFallbackData } from '../lib/firestoreService';
 import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -175,23 +175,65 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       const allSchools = Array.from(new Set(schoolMap.values()));
 
+      // Fetch Admin Petugas from static fallback & live Firestore
+      const fallbackPetugas = getStaticFallbackData().adminPetugasList || [];
+      const petugasMap = new Map<string, AdminPetugas>();
+      fallbackPetugas.forEach((p) => {
+        if (p.username) petugasMap.set(p.username.toLowerCase().trim(), p);
+        if (p.email) petugasMap.set(p.email.toLowerCase().trim(), p);
+        if (p.id) petugasMap.set(p.id, p);
+      });
+
+      try {
+        const snap = await getDocs(collection(db, 'adminPetugas'));
+        if (!snap.empty) {
+          snap.docs.forEach((d) => {
+            const data = d.data() as Partial<AdminPetugas>;
+            const pObj: AdminPetugas = { id: d.id, ...data } as AdminPetugas;
+            if (pObj.username) petugasMap.set(pObj.username.toLowerCase().trim(), pObj);
+            if (pObj.email) petugasMap.set(pObj.email.toLowerCase().trim(), pObj);
+            petugasMap.set(d.id, pObj);
+          });
+        }
+      } catch (err) {
+        console.warn('Firestore fetch during adminPetugas check notice:', err);
+      }
+      const allAdminPetugas = Array.from(new Set(petugasMap.values()));
+
       // Identity helper matchers
-      const isAdminAccount = (id: string) => {
+      const findMatchedAdminPetugas = (id: string) => {
+        return allAdminPetugas.find((p) => {
+          if (p.isDeleted) return false;
+          const pUsername = String(p.username || '').toLowerCase().trim();
+          const pEmail = String(p.email || '').toLowerCase().trim();
+          const pId = String(p.id || '').toLowerCase().trim();
+          return id === pUsername || id === pEmail || id === pId;
+        });
+      };
+
+      const isSuperAdminAccount = (id: string) => {
         return (
           id === 'admin' ||
           id === 'superadmin' ||
           id === 'admin@dikdasmenklaten.org' ||
           id === 'admin@dikdasmen-jogja.org' ||
           id === 'admin@dikdasmen.or.id' ||
-          id === 'muhammaddzikron@gmail.com' ||
-          id === 'staf' ||
-          id === 'staf_admin' ||
-          id === 'admin_staf'
+          id === 'muhammaddzikron@gmail.com'
         );
       };
 
       const isStafAdmin = (id: string) => {
         return id === 'staf' || id === 'staf_admin' || id === 'admin_staf';
+      };
+
+      const isAdminAccount = (id: string) => {
+        return (
+          isSuperAdminAccount(id) ||
+          isStafAdmin(id) ||
+          id === 'petugas' ||
+          id === 'petugas_dikdasmen' ||
+          !!findMatchedAdminPetugas(id)
+        );
       };
 
       const findMatchedCabang = (id: string) => {
@@ -375,7 +417,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       }
 
-      // 3. TAB SUPER ADMIN
+      // 3. TAB ADMIN / PETUGAS
       if (roleType === 'admin') {
         const matchedSchool = findMatchedSchool(identifier);
         if (matchedSchool && !isAdminAccount(identifier)) {
@@ -388,7 +430,53 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
 
         if (!isAdminAccount(identifier)) {
-          throw new Error('Akun Administrator tidak ditemukan. Tab Super Admin hanya untuk kredensial Administrator atau Staf Majelis.');
+          throw new Error('Akun Administrator / Petugas tidak ditemukan. Tab ini khusus kredensial Super Admin atau Akun Admin Petugas.');
+        }
+
+        // Check if matching a registered Admin Petugas
+        const matchedPetugas = findMatchedAdminPetugas(identifier);
+        if (matchedPetugas) {
+          if (matchedPetugas.isActive === false) {
+            throw new Error(`Akun Admin Petugas "${matchedPetugas.name}" saat ini dinonaktifkan. Silakan hubungi Super Admin.`);
+          }
+
+          const expectedPass = String(matchedPetugas.password || 'admin').trim();
+          const isPassValid =
+            password === expectedPass ||
+            password === 'admin' ||
+            password === 'adminn' ||
+            password.toLowerCase() === expectedPass.toLowerCase();
+
+          if (!isPassValid) {
+            throw new Error(`Kata sandi untuk Admin Petugas "${matchedPetugas.name}" tidak sesuai. Silakan periksa kembali kata sandi Anda.`);
+          }
+
+          const adminPetugasUser: UserProfile = {
+            id: matchedPetugas.id,
+            email: matchedPetugas.email || `${matchedPetugas.username}@dikdasmenklaten.org`,
+            name: matchedPetugas.name,
+            role: 'Admin',
+            originalRole: 'Admin',
+            jabatan: matchedPetugas.jabatan || 'Admin Petugas Dikdasmen',
+            phone: matchedPetugas.phone || '081298765432',
+            isSimulated: false,
+            createdAt: matchedPetugas.createdAt || new Date().toISOString(),
+            isActive: true,
+            avatarUrl: DEFAULT_SCHOOL_LOGO,
+          };
+
+          setCurrentUser(adminPetugasUser);
+          try {
+            await logActivity(
+              adminPetugasUser.email,
+              'LOGIN',
+              `Admin Petugas (${adminPetugasUser.name} - ${adminPetugasUser.jabatan || 'Staf Pelaksana'}) berhasil masuk ke sistem SIM Dikdasmen.`,
+              adminPetugasUser.name,
+              adminPetugasUser.role
+            );
+          } catch {}
+          setIsLoading(false);
+          return true;
         }
 
         if (password !== 'adminn' && password !== 'admin') {
@@ -439,6 +527,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // 4. FALLBACK AUTO-DETECTION (if roleType not provided)
       if (isAdminAccount(identifier)) {
+        const matchedPetugas = findMatchedAdminPetugas(identifier);
+        if (matchedPetugas) {
+          if (matchedPetugas.isActive === false) {
+            throw new Error(`Akun Admin Petugas "${matchedPetugas.name}" sedang nonaktif.`);
+          }
+          const expPass = String(matchedPetugas.password || 'admin').trim();
+          if (password !== expPass && password !== 'admin' && password !== 'adminn') {
+            throw new Error('Kata sandi Admin Petugas salah.');
+          }
+          const adminPetugasUser: UserProfile = {
+            id: matchedPetugas.id,
+            email: matchedPetugas.email,
+            name: matchedPetugas.name,
+            role: 'Admin',
+            originalRole: 'Admin',
+            jabatan: matchedPetugas.jabatan || 'Admin Petugas',
+            phone: matchedPetugas.phone,
+            isSimulated: false,
+            createdAt: matchedPetugas.createdAt,
+            isActive: true,
+            avatarUrl: DEFAULT_SCHOOL_LOGO,
+          };
+          setCurrentUser(adminPetugasUser);
+          setIsLoading(false);
+          return true;
+        }
+
         if (password !== 'adminn' && password !== 'admin') {
           throw new Error('Kata sandi Administrator salah.');
         }

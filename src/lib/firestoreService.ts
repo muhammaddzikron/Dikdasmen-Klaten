@@ -19,6 +19,7 @@ import { db } from './firebase';
 import { handleFirestoreError, OperationType } from './errorHandler';
 import {
   UserProfile,
+  AdminPetugas,
   Cabang,
   Sekolah,
   Guru,
@@ -902,9 +903,87 @@ export async function syncMasterSekolahKlaten(): Promise<{ success: boolean; mes
   }
 }
 
+export const DEFAULT_ADMIN_PETUGAS_LIST: AdminPetugas[] = [
+  {
+    id: 'adm-petugas-01',
+    name: 'Ahmad Fauzi, S.Kom.',
+    username: 'petugas_dikdasmen',
+    password: 'admin',
+    email: 'staf@dikdasmenklaten.org',
+    phone: '081298765432',
+    jabatan: 'Staf Verifikasi & Penerbitan SK',
+    role: 'Admin',
+    isActive: true,
+    notes: 'Petugas verifikasi berkas SK & pendataan PTK Daerah',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    isDeleted: false,
+  },
+  {
+    id: 'adm-petugas-02',
+    name: 'Nur Aisyah, S.Pd.',
+    username: 'staf_admin',
+    password: 'admin',
+    email: 'aisyah.staf@dikdasmenklaten.org',
+    phone: '085712345678',
+    jabatan: 'Staf Sekretariat & Data Satuan Pendidikan',
+    role: 'Admin',
+    isActive: true,
+    notes: 'Petugas pengelolaan data guru, tendik, dan cabang',
+    createdAt: '2024-01-01T00:00:00.000Z',
+    isDeleted: false,
+  },
+];
+
+export function getMasterAdminPetugasList(): AdminPetugas[] {
+  return DEFAULT_ADMIN_PETUGAS_LIST.map((p) => ({ ...p }));
+}
+
+// Function to synchronously reconcile/ensure all master admin petugas are synced to Firestore
+export async function syncMasterAdminPetugas(): Promise<{ success: boolean; message: string }> {
+  try {
+    const snap = await getDocs(collection(db, 'adminPetugas'));
+    const existing = snap.docs;
+    const batch = writeBatch(db);
+
+    for (const p of DEFAULT_ADMIN_PETUGAS_LIST) {
+      const match = existing.find(
+        (d) =>
+          d.id === p.id ||
+          d.data().username?.toLowerCase() === p.username.toLowerCase() ||
+          d.data().email?.toLowerCase() === p.email.toLowerCase()
+      );
+      const targetId = match ? match.id : p.id;
+      const docRef = doc(db, 'adminPetugas', targetId);
+      batch.set(
+        docRef,
+        {
+          name: p.name,
+          username: p.username,
+          password: p.password,
+          email: p.email,
+          phone: p.phone,
+          jabatan: p.jabatan,
+          role: 'Admin',
+          isActive: p.isActive ?? true,
+          notes: p.notes || '',
+          isDeleted: false,
+          createdAt: p.createdAt || new Date().toISOString(),
+        },
+        { merge: true }
+      );
+    }
+    await batch.commit();
+    return { success: true, message: 'Berhasil menyinkronkan data Admin Petugas ke Firestore' };
+  } catch (err: any) {
+    console.error('Error syncing master admin petugas:', err);
+    return { success: false, message: err?.message || 'Gagal sinkron master admin petugas' };
+  }
+}
+
 export function getStaticFallbackData() {
   const cabangList: Cabang[] = getMasterCabangList();
   const sekolahList: Sekolah[] = getMasterSekolahList();
+  const adminPetugasList: AdminPetugas[] = getMasterAdminPetugasList();
 
   const kepalaSekolahList: KepalaSekolah[] = [
     {
@@ -1242,6 +1321,7 @@ export function getStaticFallbackData() {
   return {
     cabangList,
     sekolahList,
+    adminPetugasList,
     guruList,
     tendikList,
     kepalaSekolahList,
