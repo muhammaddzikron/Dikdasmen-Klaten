@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/errorHandler';
@@ -19,6 +19,8 @@ import {
   MasterSubJenisSk,
 } from '../types';
 import { DEFAULT_MASTER_JENIS_SK, DEFAULT_MASTER_SUB_JENIS_SK } from '../lib/masterSkDefaults';
+import { MASTER_CABANG_KLATEN, getMasterCabangList } from '../data/masterCabangKlaten';
+import { MASTER_SEKOLAH_KLATEN, getMasterSekolahList } from '../data/masterSekolahKlaten';
 import {
   addRecord,
   batchAddRecords,
@@ -233,10 +235,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (snapshot.empty && defaultFallback && defaultFallback.length > 0) {
               setter(defaultFallback);
             } else {
-              const items = snapshot.docs.map((doc) => ({
+              let items = snapshot.docs.map((doc) => ({
                 id: doc.id,
                 ...doc.data(),
               })) as T[];
+
+              if (name === 'cabang') {
+                items = (items as any[]).map((c) => {
+                  const rawName = (c.name || '').trim();
+                  let normalizedName = rawName;
+                  if (rawName.toLowerCase().includes('dikdasmen daerah kota')) {
+                    normalizedName = 'Dikdasmen Daerah Kota';
+                  } else if (/^pcm\s+/i.test(rawName)) {
+                    normalizedName = rawName.replace(/^pcm\s+/i, 'Majelis Cabang dan PNF ');
+                  }
+                  return {
+                    ...c,
+                    name: normalizedName,
+                  };
+                }) as T[];
+              }
+
               if (items.length === 0 && defaultFallback) {
                 setter(defaultFallback);
               } else {
@@ -269,8 +288,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         unsubs.push(unsub);
       };
 
-      subscribeCollection<Cabang>('cabang', setCabangList);
-      subscribeCollection<Sekolah>('sekolah', setSekolahList);
+      subscribeCollection<Cabang>('cabang', setCabangList, getMasterCabangList());
+      subscribeCollection<Sekolah>('sekolah', setSekolahList, getMasterSekolahList());
       subscribeCollection<Guru>('guru', setGuruList);
       subscribeCollection<Tendik>('tendik', setTendikList);
       subscribeCollection<KepalaSekolah>('kepalaSekolah', setKepalaSekolahList);
@@ -296,22 +315,38 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [applyFallbackData]);
 
-  // Auto seed if completely blank after initial load (only when not in quota limit)
+  // Auto sync & ensure all master schools & cabangs exist in Firestore
+  const hasAutoSyncedRef = useRef<boolean>(false);
   useEffect(() => {
-    if (isQuotaExceeded) return;
+    if (isQuotaExceeded || hasAutoSyncedRef.current) return;
+
     const timer = setTimeout(async () => {
-      if (!isLoading && sekolahList.length === 0) {
-        console.log('Database appears empty, initiating automatic initial seed...');
-        try {
-          await seedInitialData();
-          showToast('Data awal Dikdasmen berhasil diinisialisasi otomatis ke Cloud Firestore!', 'info');
-        } catch (e) {
-          applyFallbackData();
+      if (!isLoading) {
+        const activeSchools = sekolahList.filter((s) => !s.isDeleted);
+        const activeCabangs = cabangList.filter((c) => !c.isDeleted);
+
+        if (activeSchools.length < MASTER_SEKOLAH_KLATEN.length || activeCabangs.length < MASTER_CABANG_KLATEN.length) {
+          hasAutoSyncedRef.current = true;
+          console.log(
+            `Database missing complete master data (Sekolah: ${activeSchools.length}/${MASTER_SEKOLAH_KLATEN.length}, Cabang: ${activeCabangs.length}/${MASTER_CABANG_KLATEN.length}). Auto-syncing to Cloud Firestore...`
+          );
+          try {
+            if (activeCabangs.length < MASTER_CABANG_KLATEN.length) {
+              await syncMasterCabangKlaten();
+            }
+            if (activeSchools.length < MASTER_SEKOLAH_KLATEN.length) {
+              await syncMasterSekolahKlaten();
+            }
+          } catch (e) {
+            console.error('Master auto-sync error:', e);
+            applyFallbackData();
+          }
         }
       }
-    }, 1500);
+    }, 600);
+
     return () => clearTimeout(timer);
-  }, [isLoading, isQuotaExceeded, sekolahList.length, showToast, applyFallbackData]);
+  }, [isLoading, isQuotaExceeded, sekolahList, cabangList, applyFallbackData]);
 
   // Combine all SKs
   const allSkList = useMemo(() => {

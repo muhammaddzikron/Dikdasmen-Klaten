@@ -50,7 +50,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpe
           ? [
               {
                 id: 'cabang',
-                label: 'Majelis Cabang',
+                label: 'Majelis dan PNF Cabang',
                 icon: Building,
               },
               {

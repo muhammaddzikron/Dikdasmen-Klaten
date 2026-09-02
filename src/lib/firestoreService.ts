@@ -33,6 +33,7 @@ import {
   DEFAULT_SCHOOL_LOGO,
 } from '../types';
 import { MASTER_CABANG_KLATEN, getMasterCabangList } from '../data/masterCabangKlaten';
+import { MASTER_SEKOLAH_KLATEN, getMasterSekolahList } from '../data/masterSekolahKlaten';
 
 // Generic CRUD functions
 export async function addRecord<T extends object>(collectionName: string, data: T): Promise<string> {
@@ -191,35 +192,25 @@ export async function syncMasterCabangKlaten(): Promise<{ success: boolean; mess
       if (usernameKey) existingMap.set(usernameKey, d);
     });
 
-    let addedCount = 0;
-    let updatedCount = 0;
+    const batch = writeBatch(db);
+    let count = 0;
 
     for (const c of MASTER_CABANG_KLATEN) {
       const nameKey = (c.name || '').toLowerCase().trim();
       const codeKey = (c.code || '').toLowerCase().trim();
       const usernameKey = (c.username || '').toLowerCase().trim();
-      const matchedDoc = (c.id && existingMap.get(c.id)) || existingMap.get(nameKey) || existingMap.get(codeKey) || (usernameKey && existingMap.get(usernameKey));
+      const matchedDoc =
+        (c.id && existingMap.get(c.id)) ||
+        existingMap.get(nameKey) ||
+        existingMap.get(codeKey) ||
+        (usernameKey && existingMap.get(usernameKey));
 
-      if (matchedDoc) {
-        // Update existing document if needed (ensure credentials and fields exist)
-        const docRef = doc(db, 'cabang', matchedDoc.id);
-        await updateDoc(docRef, {
-          username: c.username,
-          password: c.password,
-          ketuaName: c.ketuaName,
-          phone: c.phone,
-          email: c.email,
-          address: c.address,
-          name: c.name,
-          code: c.code,
-          isDeleted: false,
-        });
-        updatedCount++;
-      } else {
-        // Add new document
-        const targetId = c.id || `cabang-${c.username}`;
-        const docRef = doc(db, 'cabang', targetId);
-        await setDoc(docRef, {
+      const targetId = matchedDoc ? matchedDoc.id : c.id || `cabang-${c.username}`;
+      const docRef = doc(db, 'cabang', targetId);
+
+      batch.set(
+        docRef,
+        {
           name: c.name,
           code: c.code,
           username: c.username,
@@ -228,17 +219,20 @@ export async function syncMasterCabangKlaten(): Promise<{ success: boolean; mess
           phone: c.phone,
           email: c.email,
           ketuaName: c.ketuaName,
-          createdAt: new Date().toISOString(),
+          createdAt: c.createdAt || new Date().toISOString(),
           isDeleted: false,
-        });
-        addedCount++;
-      }
+        },
+        { merge: true }
+      );
+      count++;
     }
+
+    await batch.commit();
 
     return {
       success: true,
-      message: `Berhasil menyinkronkan Data Master Cabang (PCM): ${addedCount} ditambahkan, ${updatedCount} diperbarui. Total 26 PCM aktif.`,
-      count: addedCount + updatedCount,
+      message: `Berhasil menyinkronkan Data Master Cabang (PCM): ${count} data Majelis Cabang & PNF aktif.`,
+      count,
     };
   } catch (err: any) {
     console.error('Error syncing master cabang:', err);
@@ -292,222 +286,43 @@ export async function seedInitialData(forceReload: boolean = false): Promise<boo
 
     const cKota = cabangIds[0] || 'cabang-klaten-kota';
 
-    // 2. Sekolah Master Data Klaten (9 Sekolah - Semua di bawah Cabang Kota)
-    const sekolahData: Omit<Sekolah, 'id'>[] = [
-      {
-        name: 'SMP Muhammadiyah 1 Klaten',
-        npsn: '20309653',
-        cabangId: cKota,
-        address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMP',
-        phone: '0272-321528',
-        email: 'smpmuh1klaten@gmail.com',
-        website: 'https://smpmuh1klaten.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.3/018/SMP/1978',
-        skIzinOperasional: '503/042/DISDIK/2019',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Mewujudkan insan Islami, unggul dalam prestasi akademik dan berakhlakul karimah.',
-        mission: 'Menyelenggarakan pendidikan holistik berbasis nilai Al-Islam Kemuhammadiyahan dan penguatan karakter.',
-        description: 'SMP Muhammadiyah rujukan di Klaten dengan program kelas tahfidz, bilingual, dan riset sains.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'MTs Muhammadiyah 1 Klaten',
-        npsn: '20363271',
-        cabangId: cKota,
-        address: 'Jl. Veteran No. 72, Barenglor, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'MTs',
-        phone: '0272-322190',
-        email: 'mtsmuh1klaten@gmail.com',
-        website: 'https://mtsmuh1klaten.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: 'W.m/6.c/082/1980',
-        skIzinOperasional: '14/MTS/KLT/2018',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Unggul dalam Imtaq, berprestasi dalam Iptek, dan berwawasan lingkungan.',
-        mission: 'Mengembangkan pembelajaran madrasah berbasis Al-Quran dan penguasaan sains teknologi.',
-        description: 'Madrasah Tsanawiyah terakreditasi A dengan asrama pondok santri dan pembinaan da\'i muda.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMA Muhammadiyah 1 Klaten',
-        npsn: '20309695',
-        cabangId: cKota,
-        address: 'Jl. Mayor Kusmanto, Bramen, Sekarsuli, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMA',
-        phone: '0272-322057',
-        email: 'smamuh1klaten@yahoo.co.id',
-        website: 'https://smamuh1klaten.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.3/089/DIKMEN/1965',
-        skIzinOperasional: '188.4/1255/V.2/2020',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Mencetak kader persyarikatan dan pemimpin umat yang cerdas, kompetitif, dan berakhlak mulia.',
-        mission: 'Menyelenggarakan pembelajaran berkualitas tinggi, pembinaan olimpiade sains, dan pembiasaan ibadah.',
-        description: 'SMA unggulan kader Muhammadiyah di Kabupaten Klaten dengan prestasi tingkat nasional.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 1 Klaten Utara',
-        npsn: '20309531',
-        cabangId: cKota,
-        address: 'Jl. Ki Ageng Pengging, Gergunung, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-322890',
-        email: 'smkmuh1klatenutara@gmail.com',
-        website: 'https://smkmuh1klatenutara.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.5/112/1984',
-        skIzinOperasional: '503/4412/DPMPTSP/2021',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Menjadi SMK Pusat Keunggulan yang berakhlak mulia, kompeten, dan siap kerja di era industri 4.0.',
-        mission: 'Menyelenggarakan Teaching Factory, sertifikasi profesi BNSP, dan kemitraan dunia usaha/industri.',
-        description: 'SMK Pusat Keunggulan dengan jurusan Teknik Otomotif, Teknik Pemesinan, dan Teknik Komputer Jaringan.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 2 Klaten Utara',
-        npsn: '20309532',
-        cabangId: cKota,
-        address: 'Jl. Mayor Kusmanto No. 88, Bramen, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-323451',
-        email: 'smkmuh2klatenutara@gmail.com',
-        website: 'https://smkmuh2klatenutara.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/224/1990',
-        skIzinOperasional: '503/3310/DISDIK/2020',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Mewujudkan lulusan yang beriman, terampil, inovatif, dan mandiri.',
-        mission: 'Meningkatkan mutu pembelajaran kejuruan terapan dan pembinaan kewirausahaan siswa.',
-        description: 'Sekolah kejuruan bidang teknologi informasi, kelistrikan, dan rekayasa perangkat lunak.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 3 Klaten Utara',
-        npsn: '20309533',
-        cabangId: cKota,
-        address: 'Jl. Ki Pandanaran, Jomboran, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-324102',
-        email: 'smkmuh3klatenutara@gmail.com',
-        website: 'https://smkmuh3klatenutara.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/341/1995',
-        skIzinOperasional: '503/1189/DPMPTSP/2019',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Menghasilkan tenaga kerja terampil dan technopreneur berkarakter Islami.',
-        mission: 'Menyelenggarakan pendidikan vokasi praktis sesuai kebutuhan pasar kerja daerah dan nasional.',
-        description: 'SMK bidang manajemen bisnis, akuntansi, dan teknologi terapan.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 1 Klaten Tengah',
-        npsn: '20309534',
-        cabangId: cKota,
-        address: 'Jl. Pemuda Selatan No. 120, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-321774',
-        email: 'smkmuh1klatentengah@gmail.com',
-        website: 'https://smkmuh1klatentengah.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/512/1988',
-        skIzinOperasional: '503/2401/DISDIK/2021',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Terdepan dalam mutu vokasi, berdaya saing global, berlandaskan nilai Islam.',
-        mission: 'Mengembangkan kurikulum industri dan fasilitas laboratorium bengkel modern.',
-        description: 'SMK kejuruan teknik dan bisnis di jantung kota Klaten.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 3 Klaten Tengah',
-        npsn: '20309535',
-        cabangId: cKota,
-        address: 'Jl. Kopral Sayuti, Bareng Kidul, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-325601',
-        email: 'smkmuh3klatentengah@gmail.com',
-        website: 'https://smkmuh3klatentengah.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT INAP',
-        skPendirianNumber: '421.5/778/2002',
-        skIzinOperasional: '503/4412/DPMPTSP/2020',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Membentuk generasi ahli madya terampil dan berjiwa wirausaha.',
-        mission: 'Peningkatan intensif sarana praktik kejuruan dan program magang industri.',
-        description: 'SMK bidang kejuruan teknik dan pariwisata/layanan usaha di Klaten.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-      {
-        name: 'SMK Muhammadiyah 4 Klaten Tengah',
-        npsn: '20309536',
-        cabangId: cKota,
-        address: 'Jl. Veteran No. 15, Tegalkelaten, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        status: 'Swasta',
-        level: 'SMK',
-        phone: '0272-326712',
-        email: 'smkmuh4klatentengah@gmail.com',
-        website: 'https://smkmuh4klatentengah.sch.id',
-        accreditation: 'B',
-        categoryCapability: 'RAWAT INAP',
-        skPendirianNumber: '421.5/890/2005',
-        skIzinOperasional: '503/1089/DISDIK/2019',
-        jumlahKeseluruhanSiswa: 0,
-        logoUrl: DEFAULT_SCHOOL_LOGO,
-        bannerUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200&auto=format&fit=crop&q=80',
-        vision: 'Mencetak tenaga siap kerja yang mandiri dan berakhlakul karimah.',
-        mission: 'Mengembangkan pendampingan intensif keterampilan siswa dan penguatan karakter.',
-        description: 'SMK binaan Majelis Dikdasmen Klaten dengan fokus vokasi terapan.',
-        isDeleted: false,
-        createdAt: new Date().toISOString(),
-      },
-    ];
-
+    // 2. Sekolah Master Data Klaten (Semua Sekolah & Madrasah se-Kabupaten Klaten)
     const schoolIds: string[] = [];
-    for (const s of sekolahData) {
-      const col = collection(db, 'sekolah');
-      const d = await addDoc(col, s);
-      schoolIds.push(d.id);
+    const existingSekolahSnap = await getDocs(collection(db, 'sekolah'));
+    if (existingSekolahSnap.docs.length === 0 || forceReload) {
+      for (const s of MASTER_SEKOLAH_KLATEN) {
+        const targetId = s.id || `sch-${s.npsn}`;
+        const docRef = doc(db, 'sekolah', targetId);
+        await setDoc(docRef, {
+          name: s.name,
+          npsn: s.npsn,
+          username: s.username || s.npsn,
+          password: s.password || 'sekolah123',
+          cabangId: s.cabangId || cKota,
+          address: s.address,
+          status: s.status || 'Swasta',
+          level: s.level,
+          phone: s.phone,
+          email: s.email,
+          website: s.website,
+          accreditation: s.accreditation || 'Unggul',
+          categoryCapability: s.categoryCapability || 'SEHAT',
+          skPendirianNumber: s.skPendirianNumber || '-',
+          skIzinOperasional: s.skIzinOperasional || '-',
+          jumlahKeseluruhanSiswa: s.jumlahKeseluruhanSiswa || 0,
+          logoUrl: s.logoUrl || DEFAULT_SCHOOL_LOGO,
+          bannerUrl: s.bannerUrl || 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80',
+          vision: s.vision || 'Mewujudkan insan Islami, unggul dalam prestasi dan berakhlakul karimah.',
+          mission: s.mission || 'Menyelenggarakan pendidikan holistik berbasis nilai Al-Islam Kemuhammadiyahan.',
+          description: s.description || `${s.name} di bawah naungan Majelis Dikdasmen & PNF Klaten.`,
+          isDeleted: false,
+          createdAt: new Date().toISOString(),
+        });
+        schoolIds.push(targetId);
+      }
+    } else {
+      existingSekolahSnap.docs.forEach((doc) => schoolIds.push(doc.id));
+      await syncMasterSekolahKlaten();
     }
 
     // 3. Kepala Sekolah
@@ -1001,190 +816,86 @@ export async function seedInitialData(forceReload: boolean = false): Promise<boo
   }
 }
 
-// Function to synchronously reconcile/ensure 9 master schools are directly under Cabang Kota in Firestore
+// Function to synchronously reconcile/ensure all master schools are synced to Firestore
 export async function syncMasterSekolahKlaten(): Promise<{ success: boolean; message: string }> {
   try {
     const cabangSnap = await getDocs(collection(db, 'cabang'));
-    let kotaCabangId = 'cabang-klaten-kota';
-    
+    const cabangMap = new Map<string, string>(); // code or name to id
     if (!cabangSnap.empty) {
-      const foundKota = cabangSnap.docs.find(d => {
+      cabangSnap.docs.forEach((d) => {
         const data = d.data();
-        return data.name?.toLowerCase().includes('kota') || data.code === 'PCM-KLT-01';
+        if (data.code) cabangMap.set(data.code, d.id);
+        if (data.name) cabangMap.set(data.name.toLowerCase().trim(), d.id);
+        cabangMap.set(d.id, d.id);
       });
-      kotaCabangId = foundKota ? foundKota.id : cabangSnap.docs[0].id;
     }
-
-    const master9List = [
-      {
-        name: 'SMP Muhammadiyah 1 Klaten',
-        npsn: '20309653',
-        level: 'SMP',
-        address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        phone: '0272-321528',
-        email: 'smpmuh1klaten@gmail.com',
-        website: 'https://smpmuh1klaten.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.3/018/SMP/1978',
-        skIzinOperasional: '503/042/DISDIK/2019',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'MTs Muhammadiyah 1 Klaten',
-        npsn: '20363271',
-        level: 'MTs',
-        address: 'Jl. Veteran No. 72, Barenglor, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        phone: '0272-322190',
-        email: 'mtsmuh1klaten@gmail.com',
-        website: 'https://mtsmuh1klaten.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: 'W.m/6.c/082/1980',
-        skIzinOperasional: '14/MTS/KLT/2018',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMA Muhammadiyah 1 Klaten',
-        npsn: '20309695',
-        level: 'SMA',
-        address: 'Jl. Mayor Kusmanto, Bramen, Sekarsuli, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        phone: '0272-322057',
-        email: 'smamuh1klaten@yahoo.co.id',
-        website: 'https://smamuh1klaten.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.3/089/DIKMEN/1965',
-        skIzinOperasional: '188.4/1255/V.2/2020',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 1 Klaten Utara',
-        npsn: '20309531',
-        level: 'SMK',
-        address: 'Jl. Ki Ageng Pengging, Gergunung, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        phone: '0272-322890',
-        email: 'smkmuh1klatenutara@gmail.com',
-        website: 'https://smkmuh1klatenutara.sch.id',
-        accreditation: 'Unggul',
-        categoryCapability: 'SEHAT',
-        skPendirianNumber: '421.5/112/1984',
-        skIzinOperasional: '503/4412/DPMPTSP/2021',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 2 Klaten Utara',
-        npsn: '20309532',
-        level: 'SMK',
-        address: 'Jl. Mayor Kusmanto No. 88, Bramen, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        phone: '0272-323451',
-        email: 'smkmuh2klatenutara@gmail.com',
-        website: 'https://smkmuh2klatenutara.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/224/1990',
-        skIzinOperasional: '503/3310/DISDIK/2020',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 3 Klaten Utara',
-        npsn: '20309533',
-        level: 'SMK',
-        address: 'Jl. Ki Pandanaran, Jomboran, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-        phone: '0272-324102',
-        email: 'smkmuh3klatenutara@gmail.com',
-        website: 'https://smkmuh3klatenutara.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/341/1995',
-        skIzinOperasional: '503/1189/DPMPTSP/2019',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 1 Klaten Tengah',
-        npsn: '20309534',
-        level: 'SMK',
-        address: 'Jl. Pemuda Selatan No. 120, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        phone: '0272-321774',
-        email: 'smkmuh1klatentengah@gmail.com',
-        website: 'https://smkmuh1klatentengah.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT JALAN',
-        skPendirianNumber: '421.5/512/1988',
-        skIzinOperasional: '503/2401/DISDIK/2021',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 3 Klaten Tengah',
-        npsn: '20309535',
-        level: 'SMK',
-        address: 'Jl. Kopral Sayuti, Bareng Kidul, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        phone: '0272-325601',
-        email: 'smkmuh3klatentengah@gmail.com',
-        website: 'https://smkmuh3klatentengah.sch.id',
-        accreditation: 'A',
-        categoryCapability: 'RAWAT INAP',
-        skPendirianNumber: '421.5/778/2002',
-        skIzinOperasional: '503/4412/DPMPTSP/2020',
-        jumlahKeseluruhanSiswa: 0,
-      },
-      {
-        name: 'SMK Muhammadiyah 4 Klaten Tengah',
-        npsn: '20309536',
-        level: 'SMK',
-        address: 'Jl. Veteran No. 15, Tegalkelaten, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-        phone: '0272-326712',
-        email: 'smkmuh4klatentengah@gmail.com',
-        website: 'https://smkmuh4klatentengah.sch.id',
-        accreditation: 'B',
-        categoryCapability: 'RAWAT INAP',
-        skPendirianNumber: '421.5/890/2005',
-        skIzinOperasional: '503/1089/DISDIK/2019',
-        jumlahKeseluruhanSiswa: 0,
-      },
-    ];
 
     const existingSchoolsSnap = await getDocs(collection(db, 'sekolah'));
     const existingDocs = existingSchoolsSnap.docs;
 
-    for (const item of master9List) {
-      const matchDoc = existingDocs.find(d => {
-        const data = d.data();
-        return data.npsn === item.npsn || data.name?.toLowerCase() === item.name.toLowerCase();
-      });
+    // Process in batches of 200 (Firestore allows up to 500 operations per batch)
+    const BATCH_SIZE = 200;
+    for (let i = 0; i < MASTER_SEKOLAH_KLATEN.length; i += BATCH_SIZE) {
+      const chunk = MASTER_SEKOLAH_KLATEN.slice(i, i + BATCH_SIZE);
+      const batch = writeBatch(db);
 
-      if (matchDoc) {
-        // Update existing document to be under Cabang Kota and ensure isDeleted is false
-        await updateDoc(doc(db, 'sekolah', matchDoc.id), {
-          ...item,
-          cabangId: kotaCabangId,
-          isDeleted: false,
-          jumlahKeseluruhanSiswa: 0,
+      for (const item of chunk) {
+        const matchDoc = existingDocs.find((d) => {
+          const data = d.data();
+          return (
+            data.npsn === item.npsn ||
+            d.id === item.id ||
+            (data.name && data.name.toLowerCase().trim() === item.name.toLowerCase().trim())
+          );
         });
-      } else {
-        // Add new document under Cabang Kota
-        await addDoc(collection(db, 'sekolah'), {
-          ...item,
-          cabangId: kotaCabangId,
-          status: 'Swasta',
-          isDeleted: false,
-          createdAt: new Date().toISOString(),
-        });
+
+        const targetId = matchDoc ? matchDoc.id : item.id || `sch-${item.npsn}`;
+        const docRef = doc(db, 'sekolah', targetId);
+        const resolvedCabangId = item.cabangId || 'cabang-klaten-kota';
+
+        batch.set(
+          docRef,
+          {
+            name: item.name,
+            npsn: item.npsn,
+            cabangId: resolvedCabangId,
+            address: item.address,
+            kecamatan: item.kecamatan || '',
+            kabupaten: item.kabupaten || 'Kabupaten Klaten',
+            status: item.status || 'Swasta',
+            level: item.level,
+            username: item.username || item.npsn,
+            password: item.password || 'sekolah123',
+            phone: item.phone || '-',
+            email: item.email || '-',
+            website: item.website || '-',
+            accreditation: item.accreditation || 'A',
+            categoryCapability: item.categoryCapability || 'SEHAT',
+            skPendirianNumber: item.skPendirianNumber || '-',
+            skIzinOperasional: item.skIzinOperasional || '-',
+            jumlahKeseluruhanSiswa: item.jumlahKeseluruhanSiswa || 0,
+            logoUrl: item.logoUrl || DEFAULT_SCHOOL_LOGO,
+            bannerUrl:
+              item.bannerUrl ||
+              'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80',
+            vision: item.vision || 'Mewujudkan insan Islami, unggul dalam prestasi dan berakhlakul karimah.',
+            mission:
+              item.mission || 'Menyelenggarakan pendidikan holistik berbasis nilai Al-Islam Kemuhammadiyahan.',
+            description: item.description || `${item.name} di bawah naungan Majelis Dikdasmen & PNF Klaten.`,
+            isDeleted: false,
+            createdAt: item.createdAt || new Date().toISOString(),
+          },
+          { merge: true }
+        );
       }
+
+      await batch.commit();
     }
 
-    // Soft delete any excess schools not in the 9 list (e.g. MA Muhammadiyah)
-    for (const d of existingDocs) {
-      const data = d.data();
-      const isIn9 = master9List.some(m => m.npsn === data.npsn || m.name.toLowerCase() === data.name?.toLowerCase());
-      if (!isIn9 && !data.isDeleted) {
-        await updateDoc(doc(db, 'sekolah', d.id), {
-          isDeleted: true,
-        });
-      }
-    }
-
-    return { success: true, message: 'Berhasil menyinkronkan 9 Sekolah Master di bawah Cabang Kota.' };
+    return {
+      success: true,
+      message: `Berhasil memasukkan dan menyinkronkan ${MASTER_SEKOLAH_KLATEN.length} data Sekolah & Madrasah ke database!`,
+    };
   } catch (err: any) {
     console.error('Error syncing master sekolah:', err);
     return { success: false, message: err?.message || 'Gagal sinkron master sekolah' };
@@ -1193,225 +904,7 @@ export async function syncMasterSekolahKlaten(): Promise<{ success: boolean; mes
 
 export function getStaticFallbackData() {
   const cabangList: Cabang[] = getMasterCabangList();
-
-  const sekolahList: Sekolah[] = [
-    {
-      id: 'sch-smp-muh-1-klaten',
-      name: 'SMP Muhammadiyah 1 Klaten',
-      npsn: '20309653',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Pemuda No. 248, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMP',
-      phone: '0272-321528',
-      email: 'smpmuh1klaten@gmail.com',
-      website: 'https://smpmuh1klaten.sch.id',
-      accreditation: 'Unggul',
-      categoryCapability: 'SEHAT',
-      skPendirianNumber: '421.3/018/SMP/1978',
-      skIzinOperasional: '503/042/DISDIK/2019',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Mewujudkan insan Islami, unggul dalam prestasi akademik dan berakhlakul karimah.',
-      mission: 'Menyelenggarakan pendidikan holistik berbasis nilai Al-Islam Kemuhammadiyahan dan penguatan karakter.',
-      description: 'SMP Muhammadiyah rujukan di Klaten dengan program kelas tahfidz, bilingual, dan riset sains.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-mts-muh-1-klaten',
-      name: 'MTs Muhammadiyah 1 Klaten',
-      npsn: '20363271',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Veteran No. 72, Barenglor, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'MTs',
-      phone: '0272-322190',
-      email: 'mtsmuh1klaten@gmail.com',
-      website: 'https://mtsmuh1klaten.sch.id',
-      accreditation: 'A',
-      categoryCapability: 'RAWAT JALAN',
-      skPendirianNumber: 'W.m/6.c/082/1980',
-      skIzinOperasional: '14/MTS/KLT/2018',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Unggul dalam Imtaq, berprestasi dalam Iptek, dan berwawasan lingkungan.',
-      mission: 'Mengembangkan pembelajaran madrasah berbasis Al-Quran dan penguasaan sains teknologi.',
-      description: 'Madrasah Tsanawiyah terakreditasi A dengan asrama pondok santri dan pembinaan da\'i muda.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-sma-muh-1-klaten',
-      name: 'SMA Muhammadiyah 1 Klaten',
-      npsn: '20309695',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Mayor Kusmanto, Bramen, Sekarsuli, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMA',
-      phone: '0272-322057',
-      email: 'smamuh1klaten@yahoo.co.id',
-      website: 'https://smamuh1klaten.sch.id',
-      accreditation: 'Unggul',
-      categoryCapability: 'SEHAT',
-      skPendirianNumber: '421.3/089/DIKMEN/1965',
-      skIzinOperasional: '188.4/1255/V.2/2020',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Mencetak kader persyarikatan dan pemimpin umat yang cerdas, kompetitif, dan berakhlak mulia.',
-      mission: 'Menyelenggarakan pembelajaran berkualitas tinggi, pembinaan olimpiade sains, dan pembiasaan ibadah.',
-      description: 'SMA unggulan kader Muhammadiyah di Kabupaten Klaten dengan prestasi tingkat nasional.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-1-klaten-utara',
-      name: 'SMK Muhammadiyah 1 Klaten Utara',
-      npsn: '20309531',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Ki Ageng Pengging, Gergunung, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-322890',
-      email: 'smkmuh1klatenutara@gmail.com',
-      website: 'https://smkmuh1klatenutara.sch.id',
-      accreditation: 'Unggul',
-      categoryCapability: 'SEHAT',
-      skPendirianNumber: '421.5/112/1984',
-      skIzinOperasional: '503/4412/DPMPTSP/2021',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Menjadi SMK Pusat Keunggulan yang berakhlak mulia, kompeten, dan siap kerja di era industri 4.0.',
-      mission: 'Menyelenggarakan Teaching Factory, sertifikasi profesi BNSP, dan kemitraan dunia usaha/industri.',
-      description: 'SMK Pusat Keunggulan dengan jurusan Teknik Otomotif, Teknik Pemesinan, dan Teknik Komputer Jaringan.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-2-klaten-utara',
-      name: 'SMK Muhammadiyah 2 Klaten Utara',
-      npsn: '20309532',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Mayor Kusmanto No. 88, Bramen, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-323451',
-      email: 'smkmuh2klatenutara@gmail.com',
-      website: 'https://smkmuh2klatenutara.sch.id',
-      accreditation: 'A',
-      categoryCapability: 'RAWAT JALAN',
-      skPendirianNumber: '421.5/224/1990',
-      skIzinOperasional: '503/3310/DISDIK/2020',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Mewujudkan lulusan yang beriman, terampil, inovatif, dan mandiri.',
-      mission: 'Meningkatkan mutu pembelajaran kejuruan terapan dan pembinaan kewirausahaan siswa.',
-      description: 'Sekolah kejuruan bidang teknologi informasi, kelistrikan, dan rekayasa perangkat lunak.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-3-klaten-utara',
-      name: 'SMK Muhammadiyah 3 Klaten Utara',
-      npsn: '20309533',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Ki Pandanaran, Jomboran, Kec. Klaten Utara, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-324102',
-      email: 'smkmuh3klatenutara@gmail.com',
-      website: 'https://smkmuh3klatenutara.sch.id',
-      accreditation: 'A',
-      categoryCapability: 'RAWAT JALAN',
-      skPendirianNumber: '421.5/341/1995',
-      skIzinOperasional: '503/1189/DPMPTSP/2019',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Menghasilkan tenaga kerja terampil dan technopreneur berkarakter Islami.',
-      mission: 'Menyelenggarakan pendidikan vokasi praktis sesuai kebutuhan pasar kerja daerah dan nasional.',
-      description: 'SMK bidang manajemen bisnis, akuntansi, dan teknologi terapan.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-1-klaten-tengah',
-      name: 'SMK Muhammadiyah 1 Klaten Tengah',
-      npsn: '20309534',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Pemuda Selatan No. 120, Tonggalan, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-321774',
-      email: 'smkmuh1klatentengah@gmail.com',
-      website: 'https://smkmuh1klatentengah.sch.id',
-      accreditation: 'A',
-      categoryCapability: 'RAWAT JALAN',
-      skPendirianNumber: '421.5/512/1988',
-      skIzinOperasional: '503/2401/DISDIK/2021',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Terdepan dalam mutu vokasi, berdaya saing global, berlandaskan nilai Islam.',
-      mission: 'Mengembangkan kurikulum industri dan fasilitas laboratorium bengkel modern.',
-      description: 'SMK kejuruan teknik dan bisnis di jantung kota Klaten.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-3-klaten-tengah',
-      name: 'SMK Muhammadiyah 3 Klaten Tengah',
-      npsn: '20309535',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Kopral Sayuti, Bareng Kidul, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-325601',
-      email: 'smkmuh3klatentengah@gmail.com',
-      website: 'https://smkmuh3klatentengah.sch.id',
-      accreditation: 'A',
-      categoryCapability: 'RAWAT INAP',
-      skPendirianNumber: '421.5/778/2002',
-      skIzinOperasional: '503/4412/DPMPTSP/2020',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1581092921461-eab62e97a780?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Membentuk generasi ahli madya terampil dan berjiwa wirausaha.',
-      mission: 'Peningkatan intensif sarana praktik kejuruan dan program magang industri.',
-      description: 'SMK bidang kejuruan teknik dan pariwisata/layanan usaha di Klaten.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-    {
-      id: 'sch-smk-muh-4-klaten-tengah',
-      name: 'SMK Muhammadiyah 4 Klaten Tengah',
-      npsn: '20309536',
-      cabangId: 'cabang-klaten-kota',
-      address: 'Jl. Veteran No. 15, Tegalkelaten, Kec. Klaten Tengah, Kab. Klaten, Jawa Tengah',
-      status: 'Swasta',
-      level: 'SMK',
-      phone: '0272-326712',
-      email: 'smkmuh4klatentengah@gmail.com',
-      website: 'https://smkmuh4klatentengah.sch.id',
-      accreditation: 'B',
-      categoryCapability: 'RAWAT INAP',
-      skPendirianNumber: '421.5/890/2005',
-      skIzinOperasional: '503/1089/DISDIK/2019',
-      jumlahKeseluruhanSiswa: 0,
-      logoUrl: DEFAULT_SCHOOL_LOGO,
-      bannerUrl: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=1200&auto=format&fit=crop&q=80',
-      vision: 'Mencetak tenaga siap kerja yang mandiri dan berakhlakul karimah.',
-      mission: 'Mengembangkan pendampingan intensif keterampilan siswa dan penguatan karakter.',
-      description: 'SMK binaan Majelis Dikdasmen Klaten dengan fokus vokasi terapan.',
-      isDeleted: false,
-      createdAt: '2024-01-01T00:00:00.000Z',
-    },
-  ];
+  const sekolahList: Sekolah[] = getMasterSekolahList();
 
   const kepalaSekolahList: KepalaSekolah[] = [
     {

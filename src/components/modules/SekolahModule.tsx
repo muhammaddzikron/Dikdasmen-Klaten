@@ -450,11 +450,11 @@ export const SekolahModule: React.FC = () => {
             <button
               onClick={syncMasterSekolah}
               disabled={isLoading}
-              title="Sinkronkan 9 Sekolah Master Klaten langsung di bawah Cabang Kota"
+              title="Sinkronkan Data Master Sekolah & Madrasah se-Kabupaten Klaten ke Majelis Cabang & PNF"
               className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cyan-50 dark:bg-cyan-950/40 hover:bg-cyan-100 text-cyan-700 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 text-xs font-semibold transition-colors disabled:opacity-50"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-              <span>Sinkron Master 9 Sekolah</span>
+              <span>Sinkron Master Sekolah</span>
             </button>
           )}
           {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin' || currentUser?.role === 'Cabang') && (

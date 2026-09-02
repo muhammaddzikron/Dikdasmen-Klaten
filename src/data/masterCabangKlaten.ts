@@ -9,7 +9,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   // 1. Existing Cabang Daerah Kota (Kept intact)
   {
     id: 'cabang-klaten-kota',
-    name: 'PCM Klaten Kota',
+    name: 'Majelis Cabang dan PNF Klaten Kota',
     code: 'PCM-KLT-01',
     username: 'pcm_klatenkota',
     password: 'cabklatenkota',
@@ -23,7 +23,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-klaten-utara',
-    name: 'PCM Klaten Utara',
+    name: 'Majelis Cabang dan PNF Klaten Utara',
     code: 'PCM-KLU-02',
     username: 'pcm_klatenutara',
     password: 'cabklatenutara',
@@ -37,7 +37,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-klaten-selatan',
-    name: 'PCM Klaten Selatan',
+    name: 'Majelis Cabang dan PNF Klaten Selatan',
     code: 'PCM-KLS-03',
     username: 'pcm_klatenselatan',
     password: 'cabklatenselatan',
@@ -53,7 +53,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   // 2. 23 Cabang Tambahan PCM Klaten (with username, password, Ketua, Telp/WA, Email, Alamat)
   {
     id: 'cabang-bayat',
-    name: 'PCM Bayat',
+    name: 'Majelis Cabang dan PNF Bayat',
     code: 'PCM-BYT-04',
     username: 'pcmbayat',
     password: 'cabbayat',
@@ -67,7 +67,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-cawas',
-    name: 'PCM Cawas',
+    name: 'Majelis Cabang dan PNF Cawas',
     code: 'PCM-CWS-05',
     username: 'pcmcawas',
     password: 'cabcawas',
@@ -81,7 +81,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-ceper',
-    name: 'PCM Ceper',
+    name: 'Majelis Cabang dan PNF Ceper',
     code: 'PCM-CPR-06',
     username: 'pcmceper',
     password: 'cabceper',
@@ -95,7 +95,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-delanggu',
-    name: 'PCM Delanggu',
+    name: 'Majelis Cabang dan PNF Delanggu',
     code: 'PCM-DLG-07',
     username: 'pcmdelanggu',
     password: 'cabdelanggu',
@@ -109,7 +109,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-gantiwarno',
-    name: 'PCM Gantiwarno',
+    name: 'Majelis Cabang dan PNF Gantiwarno',
     code: 'PCM-GTW-08',
     username: 'pcmgantiwarno',
     password: 'cabgantiwarno',
@@ -123,7 +123,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-jatinom',
-    name: 'PCM Jatinom',
+    name: 'Majelis Cabang dan PNF Jatinom',
     code: 'PCM-JTN-09',
     username: 'pcmjatinom',
     password: 'cabjatinom',
@@ -137,7 +137,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-jogonalan',
-    name: 'PCM Jogonalan',
+    name: 'Majelis Cabang dan PNF Jogonalan',
     code: 'PCM-JGN-10',
     username: 'pcmjogonalan',
     password: 'cabjogonalan',
@@ -151,7 +151,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-juwiring',
-    name: 'PCM Juwiring',
+    name: 'Majelis Cabang dan PNF Juwiring',
     code: 'PCM-JWR-11',
     username: 'pcmjuwiring',
     password: 'cabjuwiring',
@@ -165,7 +165,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-kalikotes',
-    name: 'PCM Kalikotes',
+    name: 'Majelis Cabang dan PNF Kalikotes',
     code: 'PCM-KKT-12',
     username: 'pcmkalikotes',
     password: 'cabkalikotes',
@@ -179,7 +179,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-karanganom',
-    name: 'PCM Karanganom',
+    name: 'Majelis Cabang dan PNF Karanganom',
     code: 'PCM-KGN-13',
     username: 'pcmkaranganom',
     password: 'cabkaranganom',
@@ -193,7 +193,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-karangdowo',
-    name: 'PCM Karangdowo',
+    name: 'Majelis Cabang dan PNF Karangdowo',
     code: 'PCM-KGD-14',
     username: 'pcmkarangdowo',
     password: 'cabkarangdowo',
@@ -207,7 +207,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-karangnongko',
-    name: 'PCM Karangnongko',
+    name: 'Majelis Cabang dan PNF Karangnongko',
     code: 'PCM-KNN-15',
     username: 'pcmkarangnongko',
     password: 'cabkarangnongko',
@@ -221,7 +221,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-kebonarum',
-    name: 'PCM Kebonarum',
+    name: 'Majelis Cabang dan PNF Kebonarum',
     code: 'PCM-KBN-16',
     username: 'pcmkebonarum',
     password: 'cabkebonarum',
@@ -235,7 +235,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-kemalang',
-    name: 'PCM Kemalang',
+    name: 'Majelis Cabang dan PNF Kemalang',
     code: 'PCM-KML-17',
     username: 'pcmkemalang',
     password: 'cabkemalang',
@@ -249,7 +249,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-manisrenggo',
-    name: 'PCM Manisrenggo',
+    name: 'Majelis Cabang dan PNF Manisrenggo',
     code: 'PCM-MSR-18',
     username: 'pcmmanisrenggo',
     password: 'cabmanisrenggo',
@@ -263,7 +263,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-ngawen',
-    name: 'PCM Ngawen',
+    name: 'Majelis Cabang dan PNF Ngawen',
     code: 'PCM-NGW-19',
     username: 'pcmngawen',
     password: 'cabngawen',
@@ -277,7 +277,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-pedan',
-    name: 'PCM Pedan',
+    name: 'Majelis Cabang dan PNF Pedan',
     code: 'PCM-PDN-20',
     username: 'pcmpedan',
     password: 'cabpedan',
@@ -291,7 +291,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-polanharjo',
-    name: 'PCM Polanharjo',
+    name: 'Majelis Cabang dan PNF Polanharjo',
     code: 'PCM-PLH-21',
     username: 'pcmpolanharjo',
     password: 'cabpolanharjo',
@@ -305,7 +305,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-prambanan',
-    name: 'PCM Prambanan',
+    name: 'Majelis Cabang dan PNF Prambanan',
     code: 'PCM-PRB-22',
     username: 'pcmprambanan',
     password: 'cabprambanan',
@@ -319,7 +319,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-trucuk',
-    name: 'PCM Trucuk',
+    name: 'Majelis Cabang dan PNF Trucuk',
     code: 'PCM-TRC-23',
     username: 'pcmtrucuk',
     password: 'cabtrucuk',
@@ -333,7 +333,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-tulung',
-    name: 'PCM Tulung',
+    name: 'Majelis Cabang dan PNF Tulung',
     code: 'PCM-TLG-24',
     username: 'pcmtulung',
     password: 'cabtulung',
@@ -347,7 +347,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-wedi',
-    name: 'PCM Wedi',
+    name: 'Majelis Cabang dan PNF Wedi',
     code: 'PCM-WED-25',
     username: 'pcmwedi',
     password: 'cabwedi',
@@ -361,7 +361,7 @@ export const MASTER_CABANG_KLATEN: MasterCabangSeed[] = [
   },
   {
     id: 'cabang-wonosari',
-    name: 'PCM Wonosari',
+    name: 'Majelis Cabang dan PNF Wonosari',
     code: 'PCM-WNS-26',
     username: 'pcmwonosari',
     password: 'cabwonosari',

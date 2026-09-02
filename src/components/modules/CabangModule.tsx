@@ -203,7 +203,7 @@ export const CabangModule: React.FC = () => {
     const sampleData = [
       {
         'Kode Cabang': 'PCM-01',
-        'Nama Majelis Cabang': 'PCM Klaten Kota',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Klaten Kota',
         'Ketua Majelis Cabang': 'H. Budi Santoso, S.Pd.',
         'Nomor Telepon': '0272-321184',
         'Email Cabang': 'pcm_kotaklaten@muhammadiyah.id',
@@ -213,7 +213,7 @@ export const CabangModule: React.FC = () => {
       },
       {
         'Kode Cabang': 'PCM-02',
-        'Nama Majelis Cabang': 'PCM Delanggu',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Delanggu',
         'Ketua Majelis Cabang': 'Drs. H. Mulyono, M.Ag.',
         'Nomor Telepon': '0272-551234',
         'Email Cabang': 'pcm_delanggu@muhammadiyah.id',
@@ -223,7 +223,7 @@ export const CabangModule: React.FC = () => {
       },
       {
         'Kode Cabang': 'PCM-03',
-        'Nama Majelis Cabang': 'PCM Pedan',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Pedan',
         'Ketua Majelis Cabang': 'H. Wahyudi, S.Ag.',
         'Nomor Telepon': '0272-892110',
         'Email Cabang': 'pcm_pedan@muhammadiyah.id',
@@ -233,7 +233,7 @@ export const CabangModule: React.FC = () => {
       },
       {
         'Kode Cabang': 'PCM-04',
-        'Nama Majelis Cabang': 'PCM Prambanan',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Prambanan',
         'Ketua Majelis Cabang': 'Ir. H. Sudirman',
         'Nomor Telepon': '0272-491022',
         'Email Cabang': 'pcm_prambanan@muhammadiyah.id',
@@ -243,7 +243,7 @@ export const CabangModule: React.FC = () => {
       },
       {
         'Kode Cabang': 'PCM-05',
-        'Nama Majelis Cabang': 'PCM Cawas',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Cawas',
         'Ketua Majelis Cabang': 'Drs. H. Sukamto',
         'Nomor Telepon': '0813-2900-1122',
         'Email Cabang': 'pcm_cawas@muhammadiyah.id',
@@ -253,7 +253,7 @@ export const CabangModule: React.FC = () => {
       },
       {
         'Kode Cabang': 'PCM-06',
-        'Nama Majelis Cabang': 'PCM Trucuk',
+        'Nama Majelis Cabang': 'Majelis Cabang dan PNF Trucuk',
         'Ketua Majelis Cabang': 'H. Sunarto, M.Pd.',
         'Nomor Telepon': '0812-3344-5566',
         'Email Cabang': 'pcm_trucuk@muhammadiyah.id',
@@ -433,7 +433,7 @@ export const CabangModule: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Master Data Majelis Cabang</h1>
+            <h1 className="text-xl font-bold text-slate-900 dark:text-white">Master Data Majelis dan PNF Cabang</h1>
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-sky-100 text-sky-800 dark:bg-sky-950/60 dark:text-sky-300">
               {filtered.length} Majelis Cabang
             </span>
@@ -688,7 +688,7 @@ export const CabangModule: React.FC = () => {
                     title={`Masuk dan uji coba sesi operator ${cabang.name}`}
                   >
                     <LogIn className="w-3.5 h-3.5" />
-                    <span>Masuk Sesi {cabang.name.replace('PCM ', '')}</span>
+                    <span>Masuk Sesi {cabang.name.replace(/^(PCM|Majelis Cabang dan PNF)\s+/i, '')}</span>
                   </button>
                 </div>
               </div>
@@ -835,7 +835,7 @@ export const CabangModule: React.FC = () => {
                   required
                   value={formData.name || ''}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="Contoh: PCM Delanggu"
+                  placeholder="Contoh: Majelis Cabang dan PNF Delanggu"
                   className="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
