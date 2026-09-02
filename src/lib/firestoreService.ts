@@ -68,10 +68,14 @@ export async function setRecord<T extends object>(collectionName: string, id: st
 export async function updateRecord<T extends object>(collectionName: string, id: string, data: Partial<T>): Promise<void> {
   try {
     const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, {
-      ...data,
-      updatedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        ...data,
+        updatedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${id}`);
   }
@@ -80,10 +84,14 @@ export async function updateRecord<T extends object>(collectionName: string, id:
 export async function softDeleteRecord(collectionName: string, id: string): Promise<void> {
   try {
     const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, {
-      isDeleted: true,
-      deletedAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        isDeleted: true,
+        deletedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${id}`);
   }
@@ -92,10 +100,14 @@ export async function softDeleteRecord(collectionName: string, id: string): Prom
 export async function restoreRecord(collectionName: string, id: string): Promise<void> {
   try {
     const docRef = doc(db, collectionName, id);
-    await updateDoc(docRef, {
-      isDeleted: false,
-      restoredAt: new Date().toISOString(),
-    });
+    await setDoc(
+      docRef,
+      {
+        isDeleted: false,
+        restoredAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, `${collectionName}/${id}`);
   }

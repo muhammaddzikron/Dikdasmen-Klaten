@@ -296,22 +296,18 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
                 (items as any[]).forEach((s) => {
                   const sObj: Sekolah = { ...s };
-                  if (isPdmKlatenSchool(sObj)) {
+                  if (isPdmKlatenSchool(sObj) && !sObj.cabangId) {
                     sObj.cabangId = 'cabang-klaten-kota';
-                    sObj.isDeleted = false;
                   }
                   if (sObj.npsn) existingSchoolMap.set(String(sObj.npsn).trim(), sObj);
                   if (sObj.id) existingSchoolMap.set(sObj.id, sObj);
                 });
 
                 masterSchools.forEach((m) => {
-                  const existing = (m.npsn && existingSchoolMap.get(m.npsn)) || (m.id && existingSchoolMap.get(m.id));
+                  const keyNpsn = m.npsn ? String(m.npsn).trim() : '';
+                  const existing = (keyNpsn && existingSchoolMap.get(keyNpsn)) || (m.id && existingSchoolMap.get(m.id));
                   if (!existing) {
-                    existingSchoolMap.set(m.npsn || m.id, m);
-                  } else if (isPdmKlatenSchool(m)) {
-                    existing.cabangId = 'cabang-klaten-kota';
-                    existing.isDeleted = false;
-                    if (m.name) existing.name = m.name;
+                    existingSchoolMap.set(keyNpsn || m.id, m);
                   }
                 });
 
@@ -559,10 +555,24 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Operations: Sekolah
   const addSekolah = async (data: Omit<Sekolah, 'id'>) => {
     const category = computeCapabilityCategory(data.jumlahKeseluruhanSiswa || 0);
+    const newSchool: Sekolah = {
+      id: `sch-${data.npsn || Date.now()}`,
+      ...data,
+      categoryCapability: category,
+      isDeleted: false,
+    };
     const id = await addRecord('sekolah', { ...data, categoryCapability: category, isDeleted: false });
+    if (id) newSchool.id = id;
+    setSekolahList((prev) => {
+      const exists = prev.some((s) => s.id === newSchool.id || (s.npsn && s.npsn === newSchool.npsn));
+      if (exists) {
+        return prev.map((s) => (s.id === newSchool.id || s.npsn === newSchool.npsn ? { ...s, ...newSchool } : s));
+      }
+      return [newSchool, ...prev];
+    });
     await logActivity(currentUser?.email || 'System', 'TAMBAH_SEKOLAH', `Menambahkan sekolah baru: ${data.name} (NPSN: ${data.npsn})`, currentUser?.name, currentUser?.role);
     showToast(`Sekolah ${data.name} berhasil ditambahkan!`, 'success');
-    return id;
+    return id || newSchool.id;
   };
 
   const updateSekolah = async (id: string, data: Partial<Sekolah>) => {
@@ -570,6 +580,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (data.jumlahKeseluruhanSiswa !== undefined) {
       updatePayload.categoryCapability = computeCapabilityCategory(data.jumlahKeseluruhanSiswa);
     }
+    setSekolahList((prev) =>
+      prev.map((s) => (s.id === id || (data.npsn && s.npsn === data.npsn) ? { ...s, ...updatePayload } : s))
+    );
     await updateRecord('sekolah', id, updatePayload);
     await logActivity(currentUser?.email || 'System', 'UPDATE_SEKOLAH', `Memperbarui data sekolah ID: ${id}`, currentUser?.name, currentUser?.role);
     showToast('Data sekolah berhasil diperbarui!', 'success');
@@ -577,9 +590,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const deleteSekolah = async (id: string, isPermanent: boolean = false) => {
     if (isPermanent) {
+      setSekolahList((prev) => prev.filter((s) => s.id !== id));
       await hardDeleteRecord('sekolah', id);
       showToast('Sekolah berhasil dihapus permanen!', 'warning');
     } else {
+      setSekolahList((prev) =>
+        prev.map((s) => (s.id === id ? { ...s, isDeleted: true } : s))
+      );
       await softDeleteRecord('sekolah', id);
       showToast('Sekolah dipindahkan ke Recycle Bin.', 'info');
     }
@@ -587,6 +604,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const restoreSekolah = async (id: string) => {
+    setSekolahList((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, isDeleted: false } : s))
+    );
     await restoreRecord('sekolah', id);
     await logActivity(currentUser?.email || 'System', 'RESTORE_SEKOLAH', `Memulihkan data sekolah ID: ${id}`, currentUser?.name, currentUser?.role);
     showToast('Data sekolah berhasil dipulihkan!', 'success');

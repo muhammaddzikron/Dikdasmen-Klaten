@@ -73,6 +73,9 @@ export const SekolahModule: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [selectedItem, setSelectedItem] = useState<Sekolah | null>(null);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<{ id: string; name: string } | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Credential Visibility & Copy State
   const [showPassword, setShowPassword] = useState(false);
@@ -276,41 +279,55 @@ export const SekolahModule: React.FC = () => {
     e.preventDefault();
     if (!formData.name || !formData.npsn) return;
 
-    // Construct unified address if needed
-    const fullAddress =
-      formData.address ||
-      `${formData.rtRw ? `RT/RW ${formData.rtRw}, ` : ''}${formData.kelurahan ? `Kel. ${formData.kelurahan}, ` : ''}${
-        formData.kecamatan ? `Kec. ${formData.kecamatan}, ` : ''
-      }${formData.kabupaten || 'Kabupaten Klaten'} ${formData.kodePos || ''}`.trim();
+    try {
+      setIsSubmitting(true);
+      // Construct unified address if needed
+      const fullAddress =
+        formData.address ||
+        `${formData.rtRw ? `RT/RW ${formData.rtRw}, ` : ''}${formData.kelurahan ? `Kel. ${formData.kelurahan}, ` : ''}${
+          formData.kecamatan ? `Kec. ${formData.kecamatan}, ` : ''
+        }${formData.kabupaten || 'Kabupaten Klaten'} ${formData.kodePos || ''}`.trim();
 
-    const assignedCabangId =
-      currentUser?.role === 'Cabang' && currentUser.cabangId
-        ? currentUser.cabangId
-        : formData.cabangId || cabangList.find((c) => !c.isDeleted)?.id || '';
+      const assignedCabangId =
+        currentUser?.role === 'Cabang' && currentUser.cabangId
+          ? currentUser.cabangId
+          : formData.cabangId || cabangList.find((c) => !c.isDeleted)?.id || 'cabang-klaten-kota';
 
-    const finalUsername = (formData.username || formData.npsn || '').trim();
-    const finalPassword = (formData.password || 'sekolah123').trim();
+      const finalUsername = (formData.username || formData.npsn || '').trim();
+      const finalPassword = (formData.password || 'sekolah123').trim();
 
-    const payload = {
-      ...formData,
-      cabangId: assignedCabangId,
-      username: finalUsername,
-      password: finalPassword,
-      passwordUpdatedAt: new Date().toISOString(),
-      address: fullAddress,
-    };
+      const payload = {
+        ...formData,
+        cabangId: assignedCabangId,
+        username: finalUsername,
+        password: finalPassword,
+        passwordUpdatedAt: new Date().toISOString(),
+        address: fullAddress,
+      };
 
-    if (selectedItem) {
-      await updateSekolah(selectedItem.id, payload);
-    } else {
-      await addSekolah(payload as Omit<Sekolah, 'id'>);
+      if (selectedItem) {
+        await updateSekolah(selectedItem.id, payload);
+      } else {
+        await addSekolah(payload as Omit<Sekolah, 'id'>);
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error('Gagal menyimpan profil sekolah:', err);
+    } finally {
+      setIsSubmitting(false);
     }
-    setIsModalOpen(false);
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Pindahkan sekolah "${name}" ke Recycle Bin? Data masih dapat dipulihkan kapan saja.`)) {
-      await deleteSekolah(id);
+  const handleConfirmDelete = async () => {
+    if (!deleteConfirmItem) return;
+    try {
+      setIsDeleting(true);
+      await deleteSekolah(deleteConfirmItem.id);
+      setDeleteConfirmItem(null);
+    } catch (err) {
+      console.error('Gagal menghapus sekolah:', err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -644,8 +661,9 @@ export const SekolahModule: React.FC = () => {
                       <td className="p-3.5 text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            type="button"
                             onClick={() => handleOpenDetail(school)}
-                            className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900"
+                            className="p-1.5 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 transition-colors"
                             title="Lihat Detail Profil & Rekap Otomatis"
                           >
                             <Eye className="w-4 h-4" />
@@ -655,17 +673,21 @@ export const SekolahModule: React.FC = () => {
                             (currentUser?.role === 'Cabang' && (!currentUser.cabangId || isSchoolUnderCabangId(school, currentUser.cabangId, cabangList))) ||
                             (currentUser?.role === 'Sekolah' && currentUser.sekolahId === school.id)) && (
                             <button
+                              type="button"
                               onClick={() => handleOpenEditModal(school)}
-                              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40"
+                              className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:text-emerald-700 transition-colors"
                               title="Edit Data Profil Sekolah"
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
                           )}
-                          {(currentUser?.role === 'Super Admin' || currentUser?.role === 'Admin') && (
+                          {(currentUser?.role === 'Super Admin' ||
+                            currentUser?.role === 'Admin' ||
+                            (currentUser?.role === 'Cabang' && (!currentUser.cabangId || isSchoolUnderCabangId(school, currentUser.cabangId, cabangList)))) && (
                             <button
-                              onClick={() => handleDelete(school.id, school.name)}
-                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40"
+                              type="button"
+                              onClick={() => setDeleteConfirmItem({ id: school.id, name: school.name })}
+                              className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 hover:text-rose-700 transition-colors"
                               title="Hapus ke Recycle Bin"
                             >
                               <Trash2 className="w-4 h-4" />
@@ -1208,15 +1230,24 @@ export const SekolahModule: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold"
+                  disabled={isSubmitting}
+                  className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs hover:bg-slate-200 dark:hover:bg-slate-700 transition"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"
+                  disabled={isSubmitting}
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition disabled:opacity-50"
                 >
-                  Simpan Profil ke Firestore
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Menyimpan...</span>
+                    </>
+                  ) : (
+                    <span>Simpan Profil ke Firestore</span>
+                  )}
                 </button>
               </div>
             </form>
@@ -1457,6 +1488,56 @@ export const SekolahModule: React.FC = () => {
                 className="px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs"
               >
                 Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Konfirmasi Hapus Sekolah ke Recycle Bin */}
+      {deleteConfirmItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full border border-slate-200 dark:border-slate-800 shadow-2xl p-6 space-y-4">
+            <div className="flex items-center gap-3 text-rose-600">
+              <div className="p-3 bg-rose-100 dark:bg-rose-950/50 rounded-xl flex-shrink-0">
+                <Trash2 className="w-6 h-6 text-rose-600" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">Pindahkan ke Recycle Bin?</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Konfirmasi Hapus Data Profil Satuan Pendidikan</p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+              Apakah Anda yakin ingin memindahkan sekolah <b className="text-slate-900 dark:text-white font-semibold">"{deleteConfirmItem.name}"</b> ke Recycle Bin? Data masih dapat dipulihkan kapan saja melalui menu Recycle Bin.
+            </p>
+
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmItem(null)}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 flex items-center gap-1.5 transition disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Memproses...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Ya, Pindahkan ke Recycle Bin</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
