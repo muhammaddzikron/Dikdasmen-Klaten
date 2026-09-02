@@ -38,6 +38,12 @@ import {
   DEFAULT_ADMIN_PETUGAS_LIST,
   getStaticFallbackData,
 } from '../lib/firestoreService';
+import {
+  isPdmKlatenSchool,
+  isPdmKlatenCabang,
+  isSchoolUnderCabang,
+  isSchoolUnderCabangId,
+} from '../utils/cabangMatcher';
 import { useAuth } from './AuthContext';
 
 export interface ToastMessage {
@@ -252,7 +258,10 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
               })) as T[];
 
               if (name === 'cabang') {
-                items = (items as any[]).map((c) => {
+                const masterCabangs = getMasterCabangList();
+                const existingCabangMap = new Map<string, Cabang>();
+
+                (items as any[]).forEach((c) => {
                   const rawName = (c.name || '').trim();
                   let normalizedName = rawName;
                   if (rawName.toLowerCase().includes('dikdasmen daerah kota')) {
@@ -262,11 +271,51 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
                   } else if (/^pcm\s+/i.test(rawName)) {
                     normalizedName = rawName.replace(/^pcm\s+/i, 'Majelis Cabang dan PNF ');
                   }
-                  return {
+                  const cObj: Cabang = {
                     ...c,
                     name: normalizedName,
+                    code: c.code || (c.id === 'cabang-klaten-kota' ? 'PCM-KLT-01' : c.code),
                   };
-                }) as T[];
+                  if (cObj.id) existingCabangMap.set(cObj.id, cObj);
+                  if (cObj.code) existingCabangMap.set(cObj.code, cObj);
+                });
+
+                masterCabangs.forEach((m) => {
+                  const existing = existingCabangMap.get(m.id) || (m.code && existingCabangMap.get(m.code));
+                  if (!existing) {
+                    existingCabangMap.set(m.id, m);
+                  }
+                });
+
+                items = Array.from(new Set(existingCabangMap.values())) as T[];
+              }
+
+              if (name === 'sekolah') {
+                const masterSchools = getMasterSekolahList();
+                const existingSchoolMap = new Map<string, Sekolah>();
+
+                (items as any[]).forEach((s) => {
+                  const sObj: Sekolah = { ...s };
+                  if (isPdmKlatenSchool(sObj)) {
+                    sObj.cabangId = 'cabang-klaten-kota';
+                    sObj.isDeleted = false;
+                  }
+                  if (sObj.npsn) existingSchoolMap.set(String(sObj.npsn).trim(), sObj);
+                  if (sObj.id) existingSchoolMap.set(sObj.id, sObj);
+                });
+
+                masterSchools.forEach((m) => {
+                  const existing = (m.npsn && existingSchoolMap.get(m.npsn)) || (m.id && existingSchoolMap.get(m.id));
+                  if (!existing) {
+                    existingSchoolMap.set(m.npsn || m.id, m);
+                  } else if (isPdmKlatenSchool(m)) {
+                    existing.cabangId = 'cabang-klaten-kota';
+                    existing.isDeleted = false;
+                    if (m.name) existing.name = m.name;
+                  }
+                });
+
+                items = Array.from(new Set(existingSchoolMap.values())) as T[];
               }
 
               if (items.length === 0 && defaultFallback) {
@@ -400,39 +449,9 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (c.username && c.username.toLowerCase() === userCabangId?.toLowerCase())
       );
 
-      const matchingCabangKeys = new Set<string>();
-      if (userCabangId) matchingCabangKeys.add(userCabangId.toLowerCase().trim());
-      if (currentCabangObj) {
-        if (currentCabangObj.id) matchingCabangKeys.add(currentCabangObj.id.toLowerCase().trim());
-        if (currentCabangObj.code) matchingCabangKeys.add(currentCabangObj.code.toLowerCase().trim());
-        if (currentCabangObj.name) matchingCabangKeys.add(currentCabangObj.name.toLowerCase().trim());
-      }
-
-      list = list.filter((s) => {
-        const sCabangId = String(s.cabangId || '').toLowerCase().trim();
-        const sKecamatan = String(s.kecamatan || '').toLowerCase().trim();
-        if (matchingCabangKeys.has(sCabangId)) return true;
-        if (currentCabangObj?.name) {
-          const cleanCabangName = currentCabangObj.name
-            .toLowerCase()
-            .replace(/^(majelis\s+(cabang|dikdasmen)\s+dan\s+pnf|pcm|cabang|pdm)\s+/i, '')
-            .trim();
-          if (cleanCabangName && (sKecamatan.includes(cleanCabangName) || sCabangId.includes(cleanCabangName))) {
-            return true;
-          }
-        }
-        if (
-          userCabangId.includes('kota') ||
-          userCabangId.includes('pdm') ||
-          currentCabangObj?.name?.toLowerCase().includes('pdm klaten') ||
-          currentCabangObj?.name?.toLowerCase().includes('klaten kota')
-        ) {
-          if (sCabangId === 'cabang-klaten-kota' || sKecamatan === 'klaten tengah' || sKecamatan === 'klaten kota') {
-            return true;
-          }
-        }
-        return false;
-      });
+      list = list.filter((s) =>
+        isSchoolUnderCabang(s, currentCabangObj || ({ id: userCabangId, name: userCabangId, code: userCabangId } as Cabang))
+      );
 
       if (selectedSekolahId !== 'ALL') {
         const singleSelected = list.filter((s) => s.id === selectedSekolahId);
@@ -443,7 +462,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       // Super Admin or Admin
       if (selectedCabangId !== 'ALL') {
-        list = list.filter((s) => s.cabangId === selectedCabangId);
+        list = list.filter((s) => isSchoolUnderCabangId(s, selectedCabangId, cabangList));
       }
       if (selectedSekolahId !== 'ALL') {
         list = list.filter((s) => s.id === selectedSekolahId);

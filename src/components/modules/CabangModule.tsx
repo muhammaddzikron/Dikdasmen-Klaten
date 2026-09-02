@@ -33,6 +33,7 @@ import { useData } from '../../context/DataContext';
 import { useAuth } from '../../context/AuthContext';
 import { Cabang } from '../../types';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
+import { isSchoolUnderCabang } from '../../utils/cabangMatcher';
 
 interface ParsedCabang {
   code: string;
@@ -160,7 +161,7 @@ export const CabangModule: React.FC = () => {
   // Export handlers
   const handleExportExcel = () => {
     const rows = filtered.map((c, index) => {
-      const underSchools = sekolahList.filter((s) => s.cabangId === c.id && !s.isDeleted);
+      const underSchools = sekolahList.filter((s) => isSchoolUnderCabang(s, c));
       return {
         No: index + 1,
         'Kode Majelis Cabang': c.code,
@@ -182,7 +183,7 @@ export const CabangModule: React.FC = () => {
   const handleExportPDF = () => {
     const headers = ['No', 'Kode', 'Nama Majelis Cabang', 'Ketua Majelis Cabang', 'Telepon', 'Email', 'Alamat Kantor', 'Jml Sekolah'];
     const rows = filtered.map((c, index) => {
-      const underSchools = sekolahList.filter((s) => s.cabangId === c.id && !s.isDeleted);
+      const underSchools = sekolahList.filter((s) => isSchoolUnderCabang(s, c));
       return [
         String(index + 1),
         c.code,
@@ -557,7 +558,7 @@ export const CabangModule: React.FC = () => {
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((cabang) => {
-            const underSchools = sekolahList.filter((s) => s.cabangId === cabang.id && !s.isDeleted);
+            const underSchools = sekolahList.filter((s) => isSchoolUnderCabang(s, cabang));
             const isPwVisible = !!showPasswords[cabang.id];
 
             return (
@@ -715,7 +716,7 @@ export const CabangModule: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filtered.map((cabang, idx) => {
-                  const underSchools = sekolahList.filter((s) => s.cabangId === cabang.id && !s.isDeleted);
+                  const underSchools = sekolahList.filter((s) => isSchoolUnderCabang(s, cabang));
                   const isPwVisible = !!showPasswords[cabang.id];
 
                   return (

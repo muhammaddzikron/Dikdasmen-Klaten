@@ -20,6 +20,7 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useData } from '../../context/DataContext';
 import { UserRole, Sekolah, Cabang } from '../../types';
+import { isSchoolUnderCabangId } from '../../utils/cabangMatcher';
 
 interface NavbarProps {
   onToggleSidebar?: () => void;
@@ -234,7 +235,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleSidebar }) => {
               >
                 <option value="ALL" className="dark:bg-slate-900">Semua Sekolah Terdaftar</option>
                 {registeredSchools
-                  .filter((s) => selectedCabangId === 'ALL' || s.cabangId === selectedCabangId)
+                  .filter((s) => selectedCabangId === 'ALL' || isSchoolUnderCabangId(s, selectedCabangId, registeredCabangs))
                   .map((s) => (
                     <option key={s.id} value={s.id} className="dark:bg-slate-900">
                       {s.name} ({s.level})

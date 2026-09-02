@@ -35,6 +35,7 @@ import {
 } from '../types';
 import { MASTER_CABANG_KLATEN, getMasterCabangList } from '../data/masterCabangKlaten';
 import { MASTER_SEKOLAH_KLATEN, getMasterSekolahList } from '../data/masterSekolahKlaten';
+import { isPdmKlatenSchool } from '../utils/cabangMatcher';
 
 // Generic CRUD functions
 export async function addRecord<T extends object>(collectionName: string, data: T): Promise<string> {
@@ -852,7 +853,7 @@ export async function syncMasterSekolahKlaten(): Promise<{ success: boolean; mes
 
         const targetId = matchDoc ? matchDoc.id : item.id || `sch-${item.npsn}`;
         const docRef = doc(db, 'sekolah', targetId);
-        const resolvedCabangId = item.cabangId || 'cabang-klaten-kota';
+        const resolvedCabangId = isPdmKlatenSchool(item) ? 'cabang-klaten-kota' : (item.cabangId || 'cabang-klaten-kota');
 
         batch.set(
           docRef,

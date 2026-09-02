@@ -44,6 +44,7 @@ import {
   getSchoolLogo,
 } from '../../types';
 import { exportToCSV, exportToExcel, exportToPDF } from '../../lib/exportUtils';
+import { isSchoolUnderCabangId } from '../../utils/cabangMatcher';
 
 export const SekolahModule: React.FC = () => {
   const {
@@ -184,7 +185,7 @@ export const SekolahModule: React.FC = () => {
         s.address.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (s.kecamatan && s.kecamatan.toLowerCase().includes(searchQuery.toLowerCase()));
 
-      const matchCabang = filterCabang === 'ALL' || s.cabangId === filterCabang;
+      const matchCabang = filterCabang === 'ALL' || isSchoolUnderCabangId(s, filterCabang, cabangList);
       const matchLevel = filterLevel === 'ALL' || s.level === filterLevel;
       const matchAcc = filterAccreditation === 'ALL' || s.accreditation === filterAccreditation;
       const matchCat = filterCategory === 'ALL' || s.categoryCapability === filterCategory;
@@ -651,7 +652,7 @@ export const SekolahModule: React.FC = () => {
                           </button>
                           {(currentUser?.role === 'Super Admin' ||
                             currentUser?.role === 'Admin' ||
-                            (currentUser?.role === 'Cabang' && (!currentUser.cabangId || currentUser.cabangId === school.cabangId)) ||
+                            (currentUser?.role === 'Cabang' && (!currentUser.cabangId || isSchoolUnderCabangId(school, currentUser.cabangId, cabangList))) ||
                             (currentUser?.role === 'Sekolah' && currentUser.sekolahId === school.id)) && (
                             <button
                               onClick={() => handleOpenEditModal(school)}
